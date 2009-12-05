@@ -1,0 +1,1 @@
+java -classpath ".\out\production\computrainer;.\lib\rxtx-2.1-7-bins-r2\RXTXcomm.jar;.\lib\rxtx-2.1-7-bins-r2;.\lib\log4j-1.2.15.jar" nrider.NRider %1
