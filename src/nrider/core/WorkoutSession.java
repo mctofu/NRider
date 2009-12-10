@@ -52,6 +52,17 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	private EventPublisher<IWorkoutListener> _workoutPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private IRide _ride;
 
+	public void setRideElapsedTime( final long elapsed )
+	{
+		_workoutPublisher.publishEvent(
+			new IEvent<IWorkoutListener>() {
+				public void trigger( IWorkoutListener target )
+				{
+					target.handleRideTimeUpdate( elapsed );
+				}
+			});
+	}
+
 	public void setRide( final IRide ride )
 	{
 		_ride = ride;
@@ -59,7 +70,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 			new IEvent<IWorkoutListener>() {
 				public void trigger( IWorkoutListener target )
 				{
-					target.handleRideLoad( ride );
+					target.handleRideLoaded( ride );
 				}
 			});
 

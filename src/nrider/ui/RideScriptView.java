@@ -30,6 +30,8 @@ import java.awt.*;
 public class RideScriptView extends JComponent
 {
 	private RideScript _rideScript;
+	private int _indicatorX;
+	private double _posScale;
 
 	public RideScriptView()
 	{
@@ -61,18 +63,32 @@ public class RideScriptView extends JComponent
 
 			double loadScale = r.height / ( maxLoad - loadTrim );
 
-			double posScale = r.width / (double) _rideScript.getPeriod();
+			_posScale = r.width / (double) _rideScript.getPeriod();
 
 			int lastX = 0, lastY = r.height;
 			for( RideEvent re : _rideScript )
 			{
-				int nextX = (int) ( re.getPosition() * posScale );
+				int nextX = (int) ( re.getPosition() * _posScale );
 				int nextY = r.height - (int) ( re.getLoad().getValue() * loadScale );
 
 				g.drawLine( lastX, lastY, nextX, nextY );
 				lastX = nextX;
 				lastY = nextY;
 			}
+			g.setXORMode( Color.GREEN );
+			g.fillRect( _indicatorX, 0, 3, r.height );
+			g.setPaintMode();
+
+		}
+	}
+
+	public void setRideTime( long rideTime )
+	{
+		int nextIndicatorX = (int) ( rideTime * _posScale );
+		if( _indicatorX != nextIndicatorX )
+		{
+		 	_indicatorX = nextIndicatorX;
+			repaint();
 		}
 	}
 }

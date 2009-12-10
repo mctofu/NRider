@@ -27,6 +27,7 @@ import nrider.ui.RideScriptView;
 
 import javax.swing.*;
 import java.awt.*;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 
 /**
@@ -44,15 +45,17 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 	private Container _riderContainer;
 	private JLabel _workoutLoad;
 	private RideScriptView _rideScriptView;
-
+	private JLabel _rideTime;
 	public void start()
 	{
 		// TODO: Handle multiple riders
 		_window = new JFrame();
-		_window.setSize(500, 500);
+		_window.setSize(500, 600);
 
 		Container content = _window.getContentPane();
 		content.setLayout( new BoxLayout( content, BoxLayout.Y_AXIS ) );
+		_rideTime = CreateLabel("00:00:00");
+		content.add( _rideTime );
 		_workoutLoad = CreateLabel("Workout Load:");
 		content.add( _workoutLoad );
 		_rideScriptView = new RideScriptView();
@@ -63,7 +66,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		_window.setVisible(true);
 	}
 
-	public void handleRideLoad( IRide ride )
+	public void handleRideLoaded( IRide ride )
 	{
 		_rideScriptView.setRideScript( ride.getScript() );
 	}
@@ -93,6 +96,9 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			case EXT_POWER:
 				riderView.setExtPower( data.getValue() );
 				break;
+			case CALIBRATION:
+				riderView.setCalibration( data.getValue() );
+				break;
 		}
 	}
 
@@ -114,6 +120,28 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		_riderMap.get( identifier ).setThreshold( newThreshold );
 	}
 
+	public void setRideTime( long time )
+	{
+		DecimalFormat format = new DecimalFormat( "00" );
+		long totalSeconds = time / 1000;
+		String seconds = format.format( (int)(totalSeconds % 60));
+		String minutes = format.format((int)((totalSeconds % 3600) / 60));
+		String hours = format.format((int)(totalSeconds / 3600) );
+
+		_rideTime.setText( hours + ":" + minutes + ":" + seconds );
+	}
+
+	public void handleRideTimeUpdate( long rideTime )
+	{
+		setRideTime( rideTime );
+		_rideScriptView.setRideTime( rideTime );
+	}
+
+	public void handleRiderDistanceUpdate( String riderId, double distance )
+	{
+		//To change body of implemented methods use File | Settings | File Templates.
+	}
+
 	private JLabel CreateLabel( String text )
 	{
 		JLabel label = new JLabel(text);
@@ -132,8 +160,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		private JLabel _extHeartRate;
 		private JLabel _extCadence;
 		private JLabel _extPower;
-
-
+		private JLabel _calibration;
 
 		public RiderView( Rider rider )
 		{
@@ -153,6 +180,8 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			_container.add(_extCadence);
 			_extPower = CreateLabel( "Ext Power:");
 			_container.add(_extPower);
+			_calibration = CreateLabel( "Calibration:" );
+			_container.add(_calibration);
 		}
 
 		public Container getContainer()
@@ -195,6 +224,9 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			_extPower.setText( "Ext Power:" + power );
 		}
 
+		public void setCalibration( float calibration )
+		{
+			_calibration.setText( "Calibration: " + calibration );
+		}
 	}
-
 }

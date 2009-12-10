@@ -94,8 +94,22 @@ public class ComputrainerData
 		// 8 bit value
 		_value8 = (b2&~128)<<1 | (b3&1); // 8 bit values
 
-		// 12 bit value
-		_value12 = _value8 | (b1&7)<<9 | (b3&2)<<7;
+		if( _type == Type.RRC )
+		{
+			if( ( b1 & 4 ) > 0 )
+			{
+				_value12 = _value8 | ( b1 & 3 ) << 9 | (b3 & 2 ) << 7;
+			}
+			else
+			{
+				_value12 = -256;
+			}
+		}
+		else
+		{
+			// 12 bit value
+			_value12 = _value8 | (b1&7)<<9 | (b3&2)<<7;
+		}
 
 	}
 

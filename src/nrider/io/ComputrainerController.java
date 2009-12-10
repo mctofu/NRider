@@ -221,6 +221,8 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			case HEARTRATE:
 				_performanceDataPublisher.setHeartRate( data.getValue8() );
 				break;
+			case RRC:
+				_performanceDataPublisher.setCalibration( (float) ( data.getValue12() / 256.0 ) );
 		}
 
 		if( _buttons != data.getButtons() )

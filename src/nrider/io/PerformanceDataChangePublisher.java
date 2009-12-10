@@ -38,8 +38,8 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 	private float _cadence;
 	private float _heartRate;
 	private float _extHeartRate;
-	private float _distance;
 	private long _lastSpeedUpdateTime;
+	private float _calibration;
 
 	public PerformanceDataChangePublisher( String identifier )
 	{
@@ -74,6 +74,7 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 	{
 		long time = System.currentTimeMillis();
 		float distance = speed / ( ( time - _lastSpeedUpdateTime ) / 1000 );
+		_lastSpeedUpdateTime = time;
 		SendUpdate( PerformanceData.Type.DISTANCE, distance );
 		if( speed != _speed )
 		{
@@ -111,6 +112,15 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 		}
 
 		_extHeartRate = heartRate;
+	}
+
+	public void setCalibration( float calibration )
+	{
+		if( calibration != _calibration )
+		{
+			SendUpdate( PerformanceData.Type.CALIBRATION, calibration );
+		}
+		_calibration = calibration;
 	}
 
 	private void SendUpdate( PerformanceData.Type type, float value )

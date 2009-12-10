@@ -26,7 +26,7 @@ package nrider.io;
  */
 public class PerformanceData
 {
-	public enum Type { POWER, SPEED, CADENCE, HEART_RATE, DISTANCE, EXT_HEART_RATE, EXT_CADENCE, EXT_POWER }
+	public enum Type { POWER, SPEED, CADENCE, HEART_RATE, DISTANCE, EXT_HEART_RATE, EXT_CADENCE, EXT_POWER, CALIBRATION }
 
 	private Type _type;
 	private float _value;

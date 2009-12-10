@@ -19,6 +19,8 @@ package nrider.ride;
 
 import nrider.core.RideLoad;
 import nrider.core.WorkoutSession;
+import nrider.io.IPerformanceDataListener;
+import nrider.io.PerformanceData;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -43,6 +45,7 @@ public class TimeBasedRide implements IRide
 	public TimeBasedRide( RideScript timeline )
 	{
 		_timeline = timeline;
+		_status = Status.READY;
 	}
 
 	public void start()
@@ -63,6 +66,7 @@ public class TimeBasedRide implements IRide
 					_timer.schedule( new LoadTask( te.getLoad() ), te.getPosition() - _elapsed );
 				}
 			}
+			_timer.scheduleAtFixedRate( new TimeUpdateTask(), 500, 500 );
 		}
 	}
 
@@ -89,6 +93,15 @@ public class TimeBasedRide implements IRide
 	public RideScript getScript()
 	{
 		return _timeline;
+	}
+
+	public class TimeUpdateTask extends TimerTask
+	{
+		public void run()
+		{
+			long elapsed = _elapsed + new Date().getTime() - _startTime.getTime();
+			WorkoutSession.instance().setRideElapsedTime( elapsed );
+		}
 	}
 
 	public class CompleteTask extends TimerTask
