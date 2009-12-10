@@ -21,6 +21,7 @@ import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 import nrider.io.*;
 import nrider.ride.IRide;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.util.*;
@@ -34,6 +35,8 @@ import java.util.*;
  */
 public class WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, IControlDataListener
 {
+	private final static Logger LOG = Logger.getLogger( WorkoutSession.class );
+
 	private static WorkoutSession _instance = new WorkoutSession();
 
 	public static WorkoutSession instance()
@@ -49,9 +52,17 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	private EventPublisher<IWorkoutListener> _workoutPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private IRide _ride;
 
-	public void setRide( IRide ride )
+	public void setRide( final IRide ride )
 	{
 		_ride = ride;
+		_workoutPublisher.publishEvent(
+			new IEvent<IWorkoutListener>() {
+				public void trigger( IWorkoutListener target )
+				{
+					target.handleRideLoad( ride );
+				}
+			});
+
 	}
 
 	public void addRider( final Rider rider )
@@ -109,32 +120,42 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	public void setRideLoad( final RideLoad load )
 	{
+		setRideLoad( null, load );
+	}
+
+	public void setRideLoad( String riderId, final RideLoad load )
+	{
 		// TODO: Support gradient
 		for( IWorkoutController controller : _controllers )
 		{
-			// move this into RideLoad implementation?
-			switch( load.getType() )
+			final RiderSession rider = _deviceMap.get( controller.getIdentifier() );
+
+			if( rider == null )
 			{
-				case PERCENT_THRESHOLD:
-					if( _deviceMap.containsKey( controller.getIdentifier() ) )
-					{
-						RiderSession rs =  _deviceMap.get( controller.getIdentifier() );
-						controller.setLoad( rs.getRider().getLoadForWorkout( load.getValue() ) );
-					}
-					break;
-				case WATTS:
-					controller.setLoad( load.getValue() );
-					break;
+				continue;
+			}
+
+			if( riderId == null || ( rider.getRider().getIdentifier().equals( riderId ) ) )
+			{
+				// move this into RideLoad implementation?
+				switch( load.getType() )
+				{
+					case PERCENT_THRESHOLD:
+						controller.setLoad( rider.getRider().getLoadForWorkout( load.getValue() ) );
+						break;
+					case WATTS:
+						controller.setLoad( load.getValue() );
+						break;
+				}
+				_workoutPublisher.publishEvent(
+					new IEvent<IWorkoutListener>() {
+						public void trigger( IWorkoutListener target )
+						{
+							target.handleLoadAdjust( rider.getRider().getIdentifier(), load );
+						}
+					});
 			}
 		}
-
-		_workoutPublisher.publishEvent(
-			new IEvent<IWorkoutListener>() {
-				public void trigger( IWorkoutListener target )
-				{
-					target.handleLoadAdjust( load );
-				}
-			});
 	}
 
 	public void startRide()
@@ -167,7 +188,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	public String getIdentifier()
 	{
-		return "nrider.NRider WorkoutSession";
+		return "NRider WorkoutSession";
 	}
 
 	public void addPerformanceDataListener( IPerformanceDataListener listener )
@@ -220,7 +241,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 		}
 		catch( Throwable e )
 		{
-			e.printStackTrace(  );
+			LOG.error( "Control data handling error", e );
 		}
 	}
 

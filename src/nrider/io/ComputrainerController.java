@@ -216,7 +216,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 				_performanceDataPublisher.setCadence( data.getValue8() );
 				break;
 			case SPEED:
-				_performanceDataPublisher.setSpeed( (float) ( data.getValue12() * .036 * .9 ) );
+				_performanceDataPublisher.setSpeed( (float) ( data.getValue12() * .01 * .9 ) );
 				break;
 			case HEARTRATE:
 				_performanceDataPublisher.setHeartRate( data.getValue8() );

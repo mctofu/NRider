@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2009 David McIntosh (david.mcintosh@yahoo.com)
- *
+ *  
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -17,19 +17,34 @@
  */
 package nrider.ride;
 
+import nrider.core.RideLoad;
+
 /**
- * Created by IntelliJ IDEA.
- * User: David
- * Date: Nov 2, 2009
- * Time: 10:01:05 PM
- * To change this template use File | Settings | File Templates.
+ *
  */
-public interface IRide
+public class RideEvent implements Comparable
 {
-	public enum Status { PENDING, READY, RUNNING, PAUSED, STOPPED }
-	void start();
-	void pause();
-	void stop();
-	Status getStatus();
-	RideScript getScript();
+	long _position;
+	RideLoad _load;
+
+	public RideEvent( long position, RideLoad load )
+	{
+		_position = position;
+		_load = load;
+	}
+
+	public long getPosition()
+	{
+		return _position;
+	}
+
+	public RideLoad getLoad()
+	{
+		return _load;
+	}
+
+	public int compareTo( Object o )
+	{
+		return ((Long)_position).compareTo( (Long) o );
+	}
 }

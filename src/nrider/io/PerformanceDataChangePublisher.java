@@ -38,6 +38,8 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 	private float _cadence;
 	private float _heartRate;
 	private float _extHeartRate;
+	private float _distance;
+	private long _lastSpeedUpdateTime;
 
 	public PerformanceDataChangePublisher( String identifier )
 	{
@@ -70,6 +72,9 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 
 	public void setSpeed( float speed )
 	{
+		long time = System.currentTimeMillis();
+		float distance = speed / ( ( time - _lastSpeedUpdateTime ) / 1000 );
+		SendUpdate( PerformanceData.Type.DISTANCE, distance );
 		if( speed != _speed )
 		{
 			SendUpdate( PerformanceData.Type.SPEED, speed );

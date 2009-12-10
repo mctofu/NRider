@@ -2,7 +2,8 @@ package nrider.interpreter.command;
 
 import nrider.core.WorkoutSession;
 import nrider.interpreter.BaseCommand;
-import nrider.ride.ScriptedRide;
+import nrider.ride.RideLoader;
+import nrider.ride.TimeBasedRide;
 
 /**
  * Created by IntelliJ IDEA.
@@ -21,9 +22,7 @@ public class WorkoutLoad extends BaseCommand
 	@Override
 	public String run( String[] args ) throws Exception
 	{
-		ScriptedRide ride = new ScriptedRide();
-		ride.load( args[0] );
-		WorkoutSession.instance().setRide( ride );
+		WorkoutSession.instance().setRide( new RideLoader().loadRide( args[0] ));
 		return null;
 	}
 }

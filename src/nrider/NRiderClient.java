@@ -22,6 +22,8 @@ import nrider.core.RideLoad;
 import nrider.core.Rider;
 import nrider.io.IPerformanceDataListener;
 import nrider.io.PerformanceData;
+import nrider.ride.IRide;
+import nrider.ui.RideScriptView;
 
 import javax.swing.*;
 import java.awt.*;
@@ -41,6 +43,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 	private HashMap<String,RiderView> _riderMap = new HashMap<String, RiderView>();
 	private Container _riderContainer;
 	private JLabel _workoutLoad;
+	private RideScriptView _rideScriptView;
 
 	public void start()
 	{
@@ -52,10 +55,17 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		content.setLayout( new BoxLayout( content, BoxLayout.Y_AXIS ) );
 		_workoutLoad = CreateLabel("Workout Load:");
 		content.add( _workoutLoad );
+		_rideScriptView = new RideScriptView();
+		content.add( _rideScriptView );
 
 		_riderContainer = new Box( BoxLayout.X_AXIS );
 		content.add( _riderContainer );
 		_window.setVisible(true);
+	}
+
+	public void handleRideLoad( IRide ride )
+	{
+		_rideScriptView.setRideScript( ride.getScript() );
 	}
 
 	public void handlePerformanceData( String identifier, PerformanceData data )
@@ -71,7 +81,8 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 				riderView.setCadence( data.getValue() );
 				break;
 			case SPEED:
-				riderView.setSpeed( data.getValue() );
+				// convert m/s to mph
+				riderView.setSpeed( (float) ( data.getValue() * 2.237 ) );
 				break;
 			case EXT_HEART_RATE:
 				riderView.setExtHeartRate( data.getValue() );
@@ -85,7 +96,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		}
 	}
 
-	public void handleLoadAdjust( RideLoad newLoad )
+	public void handleLoadAdjust( String riderId, RideLoad newLoad )
 	{
 		_workoutLoad.setText( "Workout Load:" + newLoad.toString() );
 	}

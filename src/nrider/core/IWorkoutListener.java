@@ -17,6 +17,8 @@
  */
 package nrider.core;
 
+import nrider.ride.IRide;
+
 import java.util.EventListener;
 
 /**
@@ -28,7 +30,8 @@ import java.util.EventListener;
  */
 public interface IWorkoutListener extends EventListener
 {
-	public void handleLoadAdjust( RideLoad newLoad );
+	public void handleLoadAdjust( String riderId, RideLoad newLoad );
 	public void handleAddRider( Rider rider );
-	public void handleRiderThresholdAdjust( String identifier, double newThreshold );
+	public void handleRiderThresholdAdjust( String riderId, double newThreshold );
+	public void handleRideLoad( IRide ride );
 }
