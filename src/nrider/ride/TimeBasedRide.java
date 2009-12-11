@@ -108,7 +108,6 @@ public class TimeBasedRide implements IRide
 	{
 		public void run()
 		{
-			System.out.println( "Done" );
 			WorkoutSession session = WorkoutSession.instance();
 
 			session.setRideLoad( new RideLoad( RideLoad.Type.WATTS , 50 ) );
@@ -126,7 +125,6 @@ public class TimeBasedRide implements IRide
 
 		public void run()
 		{
-			System.out.println( "load: " + _load );
 			try
 			{
 				WorkoutSession session = WorkoutSession.instance();
