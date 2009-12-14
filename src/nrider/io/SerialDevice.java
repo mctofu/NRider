@@ -18,6 +18,7 @@
 package nrider.io;
 
 import gnu.io.*;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +31,7 @@ import java.util.TooManyListenersException;
  */
 public abstract class SerialDevice implements SerialPortEventListener
 {
+	private final static Logger LOG = Logger.getLogger( ComputrainerController.class );
 	private CommPortIdentifier _commPortId;
 	private SerialPort _serialPort;
 	private OutputStream _output;

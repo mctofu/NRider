@@ -23,11 +23,7 @@ import nrider.event.IEvent;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.TooManyListenersException;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -38,6 +34,7 @@ import java.util.concurrent.Executors;
 public class ComputrainerController extends SerialDevice implements IPerformanceDataSource, IControlDataSource, IWorkoutController
 {
 	private final static Logger LOG = Logger.getLogger( ComputrainerController.class );
+	public enum Status { CONNECTED, CONNECTING, DISCONNECTED }
 
 	private static byte[] ERGO_INIT_COMMAND = {
         0x6D, 0x00, 0x00, 0x0A, 0x08, 0x00, (byte) 0xE0,   // unknown
@@ -51,7 +48,6 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 
 	private EventPublisher<IControlDataListener> _controlPublisher = EventPublisher.directPublisher();
 	private PerformanceDataChangePublisher _performanceDataPublisher = new PerformanceDataChangePublisher( "CompuTrainer:Unassigned" );
-	private boolean _connected;
 	private TrainerMode _mode = TrainerMode.ERG;
 	private int _load = 50;
 	private int _receivedMessagesSinceLastSend = 0;
@@ -61,6 +57,16 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	private int _buttons;
 	// TODO: does every computrainer really need it's own write thread or can they be shared?
 	private ExecutorService _writeExecutor = Executors.newSingleThreadExecutor();
+	private static Timer _monitor = new Timer();
+	private static MonitorTask _monitorTask = new MonitorTask();
+	private long _lastReadTime;
+	private Status _status = Status.DISCONNECTED;
+	private boolean _lostConnection;
+
+	static
+	{
+		_monitor.scheduleAtFixedRate( _monitorTask, 0, 2000 );
+	}
 
 	public String getType()
 	{
@@ -121,12 +127,25 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	}
 
 	@Override
+	public void connect() throws PortInUseException
+	{
+		if( _status != Status.CONNECTED && _status != Status.CONNECTING )
+		{
+			_status = Status.CONNECTING;
+			super.connect();
+			startMonitor();
+		}
+	}
+
+	@Override
 	protected void connected()
 	{
 		try
 		{
+			_msgBufferPos = 0;
 			getOutput().write( "RacerMate".getBytes() );
 			getOutput().flush();
+
 		}
 		catch( IOException e )
 		{
@@ -138,29 +157,37 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	{
 		try
 		{
-			int data;
-			while( ( data = getInput().read() ) > -1 )
+			if( serialPortEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE )
 			{
-				_msgBuffer[_msgBufferPos++] = (byte) data;
-				if( !_connected && _msgBufferPos == 6 ) // handshake message is different from everything else
+				int data;
+				while( ( data = getInput().read() ) > -1 )
 				{
-					byte[] msg = new byte[6];
-					System.arraycopy( _msgBuffer, 0, msg, 0, 6 );
-					handleMessageReceived( msg );
-					_msgBufferPos = 0;
-				}
-				else if( _msgBufferPos == 7 )
-				{
-					byte[] msg = new byte[7];
-					System.arraycopy( _msgBuffer, 0, msg, 0, 7 );
-					handleMessageReceived( msg );
-					_msgBufferPos = 0;
+					_msgBuffer[_msgBufferPos++] = (byte) data;
+					if( _status != Status.CONNECTED && _msgBufferPos == 6 ) // handshake message is different from everything else
+					{
+						byte[] msg = new byte[6];
+						System.arraycopy( _msgBuffer, 0, msg, 0, 6 );
+						handleMessageReceived( msg );
+						_msgBufferPos = 0;
+						break;
+					}
+					else if( _msgBufferPos == 7 )
+					{
+						byte[] msg = new byte[7];
+						System.arraycopy( _msgBuffer, 0, msg, 0, 7 );
+						handleMessageReceived( msg );
+						_msgBufferPos = 0;
+						break;
+					}
 				}
 			}
+			_lastReadTime = System.currentTimeMillis();
 		}
 		catch ( IOException e )
 		{
 			LOG.error( "Read error on " + getIdentifier(), e );
+			_status = Status.DISCONNECTED;
+			_lostConnection = true;
 		}
 	}
 
@@ -172,18 +199,20 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 //			System.out.print( (int) b + "," );
 //		}
 //		System.out.println();
-		if( !_connected )
+		if( _status == Status.CONNECTING )
 		{
 			if( "LinkUp".equals( new String(msg) ) )
 			{
-				_connected = true;
-				System.out.println( "Connected, sending init" );
+				LOG.info( getIdentifier() + " connected" );
 				sendInitMessage();
 				sendControlMessage( _load );
+				_status = Status.CONNECTED;
+				_lostConnection = false;
 			}
 		}
 		else
 		{
+			// computrainer expects to recieve messages every so often or it stops communicating
 		   	ComputrainerData data = new ComputrainerData( msg );
 			handleData( data );
 			boolean needControlMessage;
@@ -196,6 +225,44 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			if( needControlMessage )
 			{
 				sendControlMessage( _load );
+			}
+		}
+	}
+
+	private void startMonitor()
+	{
+		_lastReadTime = System.currentTimeMillis();
+		_monitorTask.addCompuTrainer( this );
+	}
+
+	protected void checkTimeout()
+	{
+		if( _status == Status.CONNECTED )
+		{
+			if( System.currentTimeMillis() - _lastReadTime > 2000 )
+			{
+				LOG.error( getIdentifier() + " lost connection" );
+				_status = Status.DISCONNECTED;
+				_lostConnection = true;
+			}
+		}
+		else
+		{
+			try
+			{
+				super.close();
+			}
+			catch( IOException e )
+			{
+				LOG.error( e );
+			}
+			try
+			{
+				super.connect();
+			}
+			catch( PortInUseException e )
+			{
+				LOG.error( "reconnect fail", e );
 			}
 		}
 	}
@@ -336,11 +403,21 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	    return (0xff & (107 - (value & 0xff) - (value >> 8)));
 	}
 
+	public void disconnect() throws IOException
+	{
+		if( _status != Status.DISCONNECTED )
+		{
+			_status = Status.DISCONNECTED;
+			_monitorTask.removeCompuTrainer( this );
+			super.close();
+		}
+	}
+
 	@Override
 	public void close() throws IOException
 	{
 		_writeExecutor.shutdownNow();
-		super.close();
+		disconnect();
 	}
 
 	public void addControlDataListener( IControlDataListener listener )
@@ -351,5 +428,38 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	public void addPerformanceDataListener( IPerformanceDataListener listener )
 	{
 		_performanceDataPublisher.addPerformanceDataListener( listener );
+	}
+
+	static class MonitorTask extends TimerTask
+	{
+		private ArrayList<ComputrainerController> _targets = new ArrayList<ComputrainerController>();
+
+		@Override
+		public void run()
+		{
+			synchronized( _targets )
+			{
+				for( ComputrainerController cc : _targets )
+				{
+					cc.checkTimeout();
+				}
+			}
+		}
+
+		public void addCompuTrainer( ComputrainerController cc )
+		{
+			synchronized( _targets )
+			{
+				_targets.add( cc );
+			}
+		}
+
+		public void removeCompuTrainer( ComputrainerController  cc )
+		{
+			synchronized( _targets )
+			{
+				_targets.remove( cc );
+			}
+		}
 	}
 }

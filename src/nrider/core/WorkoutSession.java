@@ -17,6 +17,7 @@
  */
 package nrider.core;
 
+import gnu.io.PortInUseException;
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 import nrider.io.*;
@@ -105,6 +106,36 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 			}
 		}
 		return null;
+	}
+
+	public void disconnectControllers()
+	{
+		for( IWorkoutController controller : _controllers )
+		{
+			try
+			{
+		    	controller.disconnect();
+			}
+			catch( IOException e )
+			{
+				LOG.error( e );
+			}
+		}
+	}
+
+	public void connectControllers()
+	{
+		for( IWorkoutController controller : _controllers )
+		{
+			try
+			{
+		    	controller.connect();
+			}
+			catch( PortInUseException e )
+			{
+				LOG.error( e );
+			}
+		}
 	}
 
 	public void addWorkoutController( IWorkoutController controller )
