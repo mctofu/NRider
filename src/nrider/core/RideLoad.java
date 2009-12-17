@@ -17,6 +17,9 @@
  */
 package nrider.core;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+
 /**
  * Created by IntelliJ IDEA.
  * User: David
@@ -26,12 +29,14 @@ package nrider.core;
  */
 public class RideLoad
 {
+	private static NumberFormat INT_FORMAT = NumberFormat.getIntegerInstance();
+
 	public enum Type {
 		PERCENT_THRESHOLD
 				{
 					public String format( double value )
 					{
-						return value + "%";
+						return INT_FORMAT.format( value ) + "%";
 					}
 				},
 		WATTS
@@ -69,6 +74,11 @@ public class RideLoad
 	public double getValue()
 	{
 		return _value;
+	}
+
+	public void setValue( double value )
+	{
+		_value = value;
 	}
 
 	@Override

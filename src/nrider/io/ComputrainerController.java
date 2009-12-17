@@ -210,7 +210,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 				_lostConnection = false;
 			}
 		}
-		else
+		else if( _status == Status.CONNECTED )
 		{
 			// computrainer expects to recieve messages every so often or it stops communicating
 		   	ComputrainerData data = new ComputrainerData( msg );
@@ -226,6 +226,10 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			{
 				sendControlMessage( _load );
 			}
+		}
+		else
+		{
+			throw new IOException( "unexpected state for message");
 		}
 	}
 
@@ -258,6 +262,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			}
 			try
 			{
+				_status = Status.CONNECTING;
 				super.connect();
 			}
 			catch( PortInUseException e )

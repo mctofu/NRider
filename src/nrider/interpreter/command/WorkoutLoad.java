@@ -2,6 +2,7 @@ package nrider.interpreter.command;
 
 import nrider.core.WorkoutSession;
 import nrider.interpreter.BaseCommand;
+import nrider.ride.IRide;
 import nrider.ride.RideLoader;
 import nrider.ride.TimeBasedRide;
 
@@ -22,7 +23,12 @@ public class WorkoutLoad extends BaseCommand
 	@Override
 	public String run( String[] args ) throws Exception
 	{
-		WorkoutSession.instance().setRide( new RideLoader().loadRide( args[0] ));
+		IRide ride = new RideLoader().loadRide( args[0] );
+		if( args.length > 1 )
+		{
+			ride.getScript().adjustLoad( Double.parseDouble( args[1] ));
+		}
+		WorkoutSession.instance().setRide( ride );
 		return null;
 	}
 }

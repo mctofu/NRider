@@ -69,7 +69,7 @@ public class RideScriptView extends JComponent
 			for( RideEvent re : _rideScript )
 			{
 				int nextX = (int) ( re.getPosition() * _posScale );
-				int nextY = r.height - (int) ( re.getLoad().getValue() * loadScale );
+				int nextY = r.height - (int) ( ( re.getLoad().getValue() - loadTrim ) * loadScale );
 
 				g.drawLine( lastX, lastY, nextX, nextY );
 				lastX = nextX;

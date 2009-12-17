@@ -57,6 +57,20 @@ public class RideScript implements Iterable<RideEvent>
 		return _period;
 	}
 
+	public void adjustLoad( double adjustmentFactor )
+	{
+		_maxLoad = 0;
+		for( RideEvent re : _script )
+		{
+			double newLoad = re.getLoad().getValue() * adjustmentFactor;
+			if( newLoad > _maxLoad )
+			{
+				_maxLoad = newLoad;
+			}
+			re.getLoad().setValue( newLoad );
+		}
+	}
+
 	public RideLoad getLoad( long position )
 	{
 		// todo: could optimize if too slow.
