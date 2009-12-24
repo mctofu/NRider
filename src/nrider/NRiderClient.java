@@ -20,6 +20,7 @@ package nrider;
 import nrider.core.IWorkoutListener;
 import nrider.core.RideLoad;
 import nrider.core.Rider;
+import nrider.core.WorkoutSession;
 import nrider.io.IPerformanceDataListener;
 import nrider.io.PerformanceData;
 import nrider.ride.IRide;
@@ -29,6 +30,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * Really basic UI for debugging.
@@ -137,7 +139,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		});
 	}
 
-	public void setRideTime( long time )
+	private void setRideTime( long time )
 	{
 		DecimalFormat format = new DecimalFormat( "00" );
 		long totalSeconds = time / 1000;
@@ -161,6 +163,24 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 	public void handleRiderDistanceUpdate( String riderId, double distance )
 	{
 		//To change body of implemented methods use File | Settings | File Templates.
+	}
+
+	public void handleAddRiderAlert( final String identifier, final WorkoutSession.RiderAlertType alert )
+	{
+		SwingUtilities.invokeLater( new Runnable() {
+			public void run() {
+				_riderMap.get( identifier ).addAlert( alert );
+			}
+		});
+	}
+
+	public void handleRemoveRiderAlert( final String identifier, final WorkoutSession.RiderAlertType alert )
+	{
+		SwingUtilities.invokeLater( new Runnable() {
+			public void run() {
+				_riderMap.get( identifier ).removeAlert( alert );
+			}
+		});
 	}
 
 	private JLabel CreateLabel( String text )
@@ -188,6 +208,8 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		private JLabel _extCadence;
 		private JLabel _extPower;
 		private JLabel _calibration;
+		private JLabel _alert;
+		private HashSet<WorkoutSession.RiderAlertType> _alerts = new HashSet<WorkoutSession.RiderAlertType>( );
 
 		public RiderView( Rider rider )
 		{
@@ -195,6 +217,9 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			_container.add( _name );
 			_riderThreshold = CreateLabel("Threshold:" + rider.getThresholdPower());
 			_container.add( _riderThreshold );
+			_alert = CreateLabel( "Alert", false );
+			_alert.setBackground( Color.yellow );
+			_container.add(_alert);
 			_speed = CreateLabel("Speed:");
 			_container.add(_speed);
 			_cadence = CreateLabel("Cadence:", false );
@@ -209,6 +234,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			_container.add(_extPower);
 			_calibration = CreateLabel( "Calibration:", false );
 			_container.add(_calibration);
+
 		}
 
 		public Container getContainer()
@@ -261,5 +287,34 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			_calibration.setVisible( true );
 			_calibration.setText( "Calibration: " + calibration );
 		}
+
+		public void addAlert( WorkoutSession.RiderAlertType type )
+		{
+			_alerts.add( type );
+
+			renderAlert();
+		}
+
+
+		public void removeAlert( WorkoutSession.RiderAlertType type )
+		{
+			_alerts.remove( type );
+
+			renderAlert();
+		}
+		private void renderAlert()
+		{
+			StringBuilder sb = new StringBuilder( "Alert:");
+			for( WorkoutSession.RiderAlertType alert : _alerts )
+			{
+				sb.append( alert.toString() );
+				sb.append( " " );
+			}
+			_alert.setText( sb.toString() );
+
+			_alert.setVisible( _alerts.size() > 0 );
+		}
+
+
 	}
 }

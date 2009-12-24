@@ -45,6 +45,10 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 		return _instance;
 	}
 
+	public enum RiderAlertType {
+		SPEED_HIGH, SPEED_LOW, POWER_ASSIST
+	}
+
 	private List<Rider> _riders = new ArrayList<Rider>();
 	private List<IWorkoutController> _controllers = new ArrayList<IWorkoutController>();
 	private Map<String, RiderSession> _deviceMap = new HashMap<String, RiderSession>();
@@ -52,6 +56,12 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	private EventPublisher<IPerformanceDataListener> _performancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private EventPublisher<IWorkoutListener> _workoutPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private IRide _ride;
+	private RiderPerformanceMonitor _riderPerformanceMonitor = new RiderPerformanceMonitor();
+
+	public WorkoutSession()
+	{
+		addPerformanceDataListener( _riderPerformanceMonitor );
+	}
 
 	public void setRideElapsedTime( final long elapsed )
 	{
@@ -90,6 +100,29 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 				}
 			});
 	}
+
+	public void addRiderAlert( final String identifier, final RiderAlertType alert )
+	{
+		_workoutPublisher.publishEvent(
+			new IEvent<IWorkoutListener>() {
+				public void trigger( IWorkoutListener target )
+				{
+					target.handleAddRiderAlert( identifier, alert );
+				}
+			});
+	}
+
+	public void removeRiderAlert( final String identifier, final RiderAlertType alert )
+	{
+		_workoutPublisher.publishEvent(
+			new IEvent<IWorkoutListener>() {
+				public void trigger( IWorkoutListener target )
+				{
+					target.handleRemoveRiderAlert( identifier, alert );
+				}
+			});
+	}
+
 
 	public List<Rider> getRiders()
 	{
@@ -209,6 +242,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 				if( ( _ride.getStatus() == IRide.Status.READY || _ride.getStatus() == IRide.Status.PAUSED ) )
 				{
 					_ride.start();
+					_riderPerformanceMonitor.activate();
 				}
 			}
 		}
@@ -223,6 +257,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 				if( _ride != null & _ride.getStatus() == IRide.Status.RUNNING )
 				{
 					_ride.pause();
+					_riderPerformanceMonitor.deactivate();
 				}
 			}
 		}
