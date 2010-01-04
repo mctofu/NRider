@@ -54,8 +54,5 @@ public class Rider
 		_thresholdPower = thresholdPower;
 	}
 
-	public double getLoadForWorkout( double workoutLoad )
-	{
-		return _thresholdPower * workoutLoad / 100;
-	}
+
 }

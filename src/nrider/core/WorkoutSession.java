@@ -28,11 +28,8 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Created by IntelliJ IDEA.
- * User: David
- * Date: Nov 1, 2009
- * Time: 9:15:03 AM
- * To change this template use File | Settings | File Templates.
+ * Central control for a workout.  Manages riders and trainers in a workout.
+ * TODO: review/fix thread safety after sorting out how everything should work
  */
 public class WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, IControlDataListener
 {
@@ -212,16 +209,8 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 			if( riderId == null || ( rider.getRider().getIdentifier().equals( riderId ) ) )
 			{
-				// move this into RideLoad implementation?
-				switch( load.getType() )
-				{
-					case PERCENT_THRESHOLD:
-						controller.setLoad( rider.getRider().getLoadForWorkout( load.getValue() ) );
-						break;
-					case WATTS:
-						controller.setLoad( load.getValue() );
-						break;
-				}
+				rider.setCurrentLoad( load );
+				controller.setLoad( rider.getLoadForWorkout() );
 				_workoutPublisher.publishEvent(
 					new IEvent<IWorkoutListener>() {
 						public void trigger( IWorkoutListener target )
@@ -231,6 +220,11 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 					});
 			}
 		}
+	}
+
+	public double getTargetWatts( String riderId )
+	{
+		return _riderMap.get( riderId ).getLoadForWorkoutWithoutHandicap();
 	}
 
 	public void startRide()
@@ -339,6 +333,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	{
 		Rider rider = getRider( identifier );
 		rider.setThresholdPower( thresholdPower );
+		reapplyRiderLoad( identifier );
 		// TODO: if in a workout should adjust load on their trainer
 		_workoutPublisher.publishEvent(
 			new IEvent<IWorkoutListener>() {
@@ -347,5 +342,25 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 					target.handleRiderThresholdAdjust( identifier, thresholdPower );
 				}
 			});
+	}
+
+	public void setRiderHandicap( String identifier, final int handicap )
+	{
+		RiderSession rider = _riderMap.get( identifier );
+		rider.setHandicap( handicap );
+		reapplyRiderLoad( identifier );
+	}
+
+	private void reapplyRiderLoad( String riderId )
+	{
+		for( IWorkoutController controller : _controllers )
+		{
+			RiderSession rider = _deviceMap.get( controller.getIdentifier() );
+			if( rider != null && rider.getRider().getIdentifier().equals( riderId ) )
+			{
+				controller.setLoad( rider.getLoadForWorkout() );
+				break;
+			}
+		}
 	}
 }

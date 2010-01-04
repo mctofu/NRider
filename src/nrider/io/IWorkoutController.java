@@ -35,7 +35,7 @@ public interface IWorkoutController
 	public String getType();
 	public String getIdentifier();
 	public void setLoad( double load );
-	public int getLoad();
+	public double getLoad();
 	public void setMode( TrainerMode mode );
 	public TrainerMode getMode();
 	// temporarily disconnect

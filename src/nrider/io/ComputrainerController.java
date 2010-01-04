@@ -49,7 +49,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	private EventPublisher<IControlDataListener> _controlPublisher = EventPublisher.directPublisher();
 	private PerformanceDataChangePublisher _performanceDataPublisher = new PerformanceDataChangePublisher( "CompuTrainer:Unassigned" );
 	private TrainerMode _mode = TrainerMode.ERG;
-	private int _load = 50;
+	private double _load = 50;
 	private int _receivedMessagesSinceLastSend = 0;
 	private final Object _msgCountLock = new Object();
 	private byte[] _msgBuffer = new byte[7];
@@ -92,7 +92,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 		this._mode = _mode;
 	}
 
-	public int getLoad()
+	public double getLoad()
 	{
 		return _load;
 	}
@@ -205,7 +205,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			{
 				LOG.info( getIdentifier() + " connected" );
 				sendInitMessage();
-				sendControlMessage( _load );
+				sendControlMessage( (int) _load );
 				_status = Status.CONNECTED;
 				_lostConnection = false;
 			}
@@ -224,7 +224,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			}
 			if( needControlMessage )
 			{
-				sendControlMessage( _load );
+				sendControlMessage( (int) _load );
 			}
 		}
 		else
@@ -348,7 +348,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	private synchronized void sendInitMessage() throws IOException
 	{
 		getOutput().write( ERGO_INIT_COMMAND );
-		sendControlMessage( _load );
+		sendControlMessage( (int) _load );
 	}
 
 	private synchronized void sendControlMessage( int load ) throws IOException
