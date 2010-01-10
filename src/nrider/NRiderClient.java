@@ -24,6 +24,8 @@ import nrider.core.WorkoutSession;
 import nrider.io.IPerformanceDataListener;
 import nrider.io.PerformanceData;
 import nrider.ride.IRide;
+import nrider.ui.PerformanceStatView;
+import nrider.ui.RecentPerformanceView;
 import nrider.ui.RideScriptView;
 
 import javax.swing.*;
@@ -39,14 +41,13 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 {
 	private static Font _bigAFont = new Font( "Serif", Font.PLAIN, 30 );
 	private JFrame _window;
-	private HashMap<String,RiderView> _riderMap = new HashMap<String, RiderView>();
-	private Container _riderContainer;
+	private RiderListView _riderListView;
 	private JLabel _workoutLoad;
 	private RideScriptView _rideScriptView;
 	private JLabel _rideTime;
+
 	public void start()
 	{
-		// TODO: Handle multiple riders
 		_window = new JFrame();
 		_window.setSize(500, 600);
 
@@ -59,8 +60,8 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		_rideScriptView = new RideScriptView();
 		content.add( _rideScriptView );
 
-		_riderContainer = new Box( BoxLayout.X_AXIS );
-		content.add( _riderContainer );
+		_riderListView = new RiderListView();
+		content.add( _riderListView.getContainer() );
 		_window.setVisible(true);
 	}
 
@@ -77,34 +78,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 	{
 		SwingUtilities.invokeLater( new Runnable() {
 			public void run() {
-
-				// TODO: Assign to right rider based on identifier
-				RiderView riderView = _riderMap.get( identifier );
-				switch( data.getType() )
-				{
-					case POWER:
-						riderView.setPower( data.getValue() );
-						break;
-					case CADENCE:
-						riderView.setCadence( data.getValue() );
-						break;
-					case SPEED:
-						// convert m/s to mph
-						riderView.setSpeed( (float) ( data.getValue() * 2.237 ) );
-						break;
-					case EXT_HEART_RATE:
-						riderView.setExtHeartRate( data.getValue() );
-						break;
-					case EXT_CADENCE:
-						riderView.setExtCadence( data.getValue() );
-						break;
-					case EXT_POWER:
-						riderView.setExtPower( data.getValue() );
-						break;
-					case CALIBRATION:
-						riderView.setCalibration( data.getValue() );
-						break;
-				}
+				_riderListView.handlePerformanceData( identifier, data );
 			}
 		});
 	}
@@ -122,9 +96,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 	{
 		SwingUtilities.invokeLater( new Runnable() {
 			public void run() {
-				RiderView riderView = new RiderView( rider );
-				_riderContainer.add( riderView.getContainer() );
-				_riderMap.put( rider.getIdentifier(), riderView );
+				_riderListView.addRider( rider );
 				_window.getRootPane().revalidate();
 			}
 		});
@@ -134,7 +106,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 	{
 		SwingUtilities.invokeLater( new Runnable() {
 			public void run() {
-				_riderMap.get( identifier ).setThreshold( newThreshold );
+				_riderListView.handleRiderThresholdAdjust( identifier, newThreshold );
 			}
 		});
 	}
@@ -169,7 +141,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 	{
 		SwingUtilities.invokeLater( new Runnable() {
 			public void run() {
-				_riderMap.get( identifier ).addAlert( alert );
+				_riderListView.handleAddRiderAlert( identifier, alert );
 			}
 		});
 	}
@@ -178,7 +150,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 	{
 		SwingUtilities.invokeLater( new Runnable() {
 			public void run() {
-				_riderMap.get( identifier ).removeAlert( alert );
+				_riderListView.handleRemoveRiderAlert( identifier, alert );
 			}
 		});
 	}
@@ -196,44 +168,213 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		return label;
 	}
 
-	class RiderView
+	class RiderListView
 	{
-		private Container _container = new Box( BoxLayout.Y_AXIS );
-		private JLabel _name;
+		private Container _container = new JPanel( new GridBagLayout() );
+		private HashMap<String,RiderView> _riderMap = new HashMap<String, RiderView>();
+		private JLabel _riderName;
+		private JLabel _threshold;
+		private JLabel _alert;
 		private JLabel _speed;
 		private JLabel _cadence;
 		private JLabel _power;
-		private JLabel _riderThreshold;
-		private JLabel _extHeartRate;
+		private JLabel _extHr;
 		private JLabel _extCadence;
 		private JLabel _extPower;
 		private JLabel _calibration;
+
+		public RiderListView()
+		{
+			_container.setPreferredSize( new Dimension( 800, 200 ) );
+			GridBagConstraints c = new GridBagConstraints();
+			c.gridx = 0;
+			_riderName = CreateLabel( "Name" );
+			c.gridy = 0;
+			_container.add( _riderName, c );
+
+			_threshold = CreateLabel( "Threshold" );
+			c.gridy = 1;
+			_container.add( _threshold, c );
+
+			_alert = CreateLabel( "" );
+			c.gridy = 2;
+			_container.add( _alert, c );
+
+			_speed = CreateLabel( "Speed" );
+			c.gridy = 3;
+			_container.add( _speed, c );
+
+			_cadence = CreateLabel( "Cadence", false );
+			c.gridy = 4;
+			_container.add( _cadence, c );
+
+			_power = CreateLabel( "Power" );
+			c.gridy = 5;
+			_container.add( _power, c );
+
+			_extHr = CreateLabel( "Ext HR", false );
+			c.gridy = 6;
+			_container.add( _extHr, c );
+
+			_extCadence = CreateLabel( "Ext Cadence", false );
+			c.gridy = 7;
+			_container.add( _extCadence, c );
+
+			_extPower = CreateLabel( "Ext Power", false );
+			c.gridy = 8;
+			_container.add( _extPower, c );
+
+			_calibration = CreateLabel( "Calibration" );
+			c.gridy = 9;
+			_container.add( _calibration, c );
+		}
+
+		public Container getContainer()
+		{
+			return _container;
+		}
+
+		public void addRider( Rider rider )
+		{
+			RiderView riderView = new RiderView( rider, _container, _riderMap.size() * 2 + 1 );
+			_riderMap.put( rider.getIdentifier(), riderView );
+		}
+
+		public void handlePerformanceData( String identifier, final PerformanceData data )
+		{
+			RiderView riderView = _riderMap.get( identifier );
+			switch( data.getType() )
+			{
+				case POWER:
+					riderView.setPower( data.getValue() );
+					break;
+				case CADENCE:
+					_cadence.setVisible( true );
+					riderView.setCadence( data.getValue() );
+					break;
+				case SPEED:
+					// convert m/s to mph
+					riderView.setSpeed( (float) ( data.getValue() * 2.237 ) );
+					break;
+				case EXT_HEART_RATE:
+					_extHr.setVisible( true );
+					riderView.setExtHeartRate( data.getValue() );
+					break;
+				case EXT_CADENCE:
+					_extCadence.setVisible( true );
+					riderView.setExtCadence( data.getValue() );
+					break;
+				case EXT_POWER:
+					_extPower.setVisible( true );
+					riderView.setExtPower( data.getValue() );
+					break;
+				case CALIBRATION:
+					riderView.setCalibration( data.getValue() );
+					break;
+			}
+		}
+
+		public void handleAddRiderAlert( String identifier, WorkoutSession.RiderAlertType alert )
+		{
+			_riderMap.get( identifier ).addAlert( alert );
+		}
+
+		public void handleRemoveRiderAlert( String identifier, WorkoutSession.RiderAlertType alert )
+		{
+			_riderMap.get( identifier ).removeAlert( alert );
+		}
+
+		public void handleRiderThresholdAdjust( String identifier, double newThreshold )
+		{
+			_riderMap.get( identifier ).setThreshold( newThreshold );
+		}
+	}
+
+	class RiderView
+	{
+		private Container _container;
+		private JLabel _name;
+		private PerformanceStatView _speed;
+		private PerformanceStatView _cadence;
+		private PerformanceStatView _power;
+		private JLabel _riderThreshold;
+		private PerformanceStatView _extHeartRate;
+		private PerformanceStatView _extCadence;
+		private PerformanceStatView _extPower;
+		private JLabel _calibration;
 		private JLabel _alert;
 		private HashSet<WorkoutSession.RiderAlertType> _alerts = new HashSet<WorkoutSession.RiderAlertType>( );
+		private Rider _rider;
 
-		public RiderView( Rider rider )
+		public RiderView( Rider rider, Container container, int columnNumber )
 		{
-			_name =CreateLabel("Name:" + rider.getName() );
-			_container.add( _name );
-			_riderThreshold = CreateLabel("Threshold:" + rider.getThresholdPower());
-			_container.add( _riderThreshold );
-			_alert = CreateLabel( "Alert", false );
-			_alert.setBackground( Color.yellow );
-			_container.add(_alert);
-			_speed = CreateLabel("Speed:");
-			_container.add(_speed);
-			_cadence = CreateLabel("Cadence:", false );
-			_container.add(_cadence);
-			_power = CreateLabel( "Power:");
-			_container.add(_power);
-			_extHeartRate = CreateLabel( "Ext HR:", false );
-			_container.add(_extHeartRate);
-			_extCadence = CreateLabel( "Ext Cadence:", false );
-			_container.add(_extCadence);
-			_extPower = CreateLabel( "Ext Power:", false );
-			_container.add(_extPower);
-			_calibration = CreateLabel( "Calibration:", false );
-			_container.add(_calibration);
+			_container = container;
+			GridBagConstraints c = new GridBagConstraints( );
+			c.ipadx = 20;
+			c.gridx = columnNumber;
+
+			_name = CreateLabel( rider.getName() );
+			c.gridy = 0;
+			c.gridwidth = 2;
+			_container.add( _name, c );
+
+			_riderThreshold = CreateLabel( rider.getThresholdPower() + "" );
+			c.gridy = 1;
+			_container.add( _riderThreshold, c );
+
+			_alert = CreateLabel( "", false );
+			_alert.setBackground( Color.YELLOW );
+			_alert.setForeground( Color.ORANGE );
+			c.gridy = 2;
+			_container.add(_alert, c);
+
+			c.gridwidth = 1;
+
+			_speed = new PerformanceStatView( 0, 30, 60, new DecimalFormat( "0.0" ) );
+			c.gridy = 3;
+			addPerformanceStatView( _speed, c );
+
+			_cadence = new PerformanceStatView(  0, 150, 60, new DecimalFormat( "0" ) );
+			c.gridy = 4;
+			_cadence.setVisible( false );
+			addPerformanceStatView( _cadence, c );
+
+			_power = new PerformanceStatView( 0, rider.getThresholdPower() * 1.1, 60, new DecimalFormat( "0" ) );
+			c.gridy = 5;
+			addPerformanceStatView( _power, c );
+
+			_extHeartRate = new PerformanceStatView( 0, 220, 60, new DecimalFormat( "0" ) );
+			c.gridy = 6;
+			_extHeartRate.setVisible( false );
+			addPerformanceStatView( _extHeartRate, c );
+
+			_extCadence = new PerformanceStatView( 0, 150, 60, new DecimalFormat( "0" ) );
+			c.gridy = 7;
+			_extCadence.setVisible( false );
+			addPerformanceStatView( _extCadence, c );
+
+			_extPower = new PerformanceStatView( 0, 500, 60, new DecimalFormat( "0" ) );
+			c.gridy = 8;
+			_extPower.setVisible( false );
+			addPerformanceStatView( _extPower, c );
+
+			_calibration = CreateLabel( "", false );
+			c.gridy = 9;
+			c.gridwidth = 2;
+			_container.add( _calibration, c );
+
+			_rider = rider;
+
+		}
+
+		private void addPerformanceStatView( PerformanceStatView perf, GridBagConstraints c )
+		{
+			int gridX = c.gridx;
+			_container.add( perf.getLabel(), c );
+			c.gridx = gridX + 1;
+			_container.add( perf.getGraph(), c );
+			c.gridx = gridX;
+
 
 		}
 
@@ -244,48 +385,73 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 
 		public void setSpeed( float speed )
 		{
-			_speed.setVisible( true );
-			_speed.setText( "Speed:" + speed );
+			RecentPerformanceView.DataType type;
+			if( speed > 25 )
+			{
+				type = RecentPerformanceView.DataType.EXTREME;
+			}
+			else if( speed < 19 )
+			{
+				type = RecentPerformanceView.DataType.WARNING;
+			}
+			else
+			{
+				type = RecentPerformanceView.DataType.NORMAL;
+			}
+			_speed.updateValue( speed, type );
 		}
 
 		public void setCadence( float cadence )
 		{
 			_cadence.setVisible( true );
-			_cadence.setText( "Cadence:" + cadence );
+			_cadence.updateValue( cadence, RecentPerformanceView.DataType.NORMAL );
 		}
 
 		public void setPower( float power )
 		{
-			_power.setText( "Power:" + power );
+			RecentPerformanceView.DataType type;
+			if( power > _rider.getThresholdPower() * 1.1 )
+			{
+				type = RecentPerformanceView.DataType.EXTREME;
+			}
+			else if( power > _rider.getThresholdPower() * .9 )
+			{
+				type = RecentPerformanceView.DataType.WARNING;
+			}
+			else
+			{
+				type = RecentPerformanceView.DataType.NORMAL;
+			}
+			_power.updateValue( power, type );
 		}
 
 		public void setThreshold( double threshold )
 		{
-			_riderThreshold.setText( "Threshold:" + threshold );
+			_riderThreshold.setText( threshold + "" );
 		}
 
 		public void setExtHeartRate( float hr )
 		{
 			_extHeartRate.setVisible( true );
-			_extHeartRate.setText( "Ext HR:" + hr );
+			_extHeartRate.updateValue(  hr, RecentPerformanceView.DataType.NORMAL );
 		}
 
 		public void setExtCadence( float cadence )
 		{
 			_extCadence.setVisible( true );
-			_extCadence.setText( "Ext Cadence:" + cadence );
+			_extCadence.updateValue( cadence, RecentPerformanceView.DataType.NORMAL );
 		}
 
 		public void setExtPower( float power )
 		{
 			_extPower.setVisible( true );
-			_extPower.setText( "Ext Power:" + power );
+			_extPower.updateValue( power, RecentPerformanceView.DataType.NORMAL );
 		}
 
 		public void setCalibration( float calibration )
 		{
 			_calibration.setVisible( true );
-			_calibration.setText( "Calibration: " + calibration );
+			_calibration.setText( new DecimalFormat( "0.00" ).format( calibration ) );
 		}
 
 		public void addAlert( WorkoutSession.RiderAlertType type )
@@ -304,7 +470,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		}
 		private void renderAlert()
 		{
-			StringBuilder sb = new StringBuilder( "Alert:");
+			StringBuilder sb = new StringBuilder();
 			for( WorkoutSession.RiderAlertType alert : _alerts )
 			{
 				sb.append( alert.toString() );
@@ -314,7 +480,5 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 
 			_alert.setVisible( _alerts.size() > 0 );
 		}
-
-
 	}
 }

@@ -17,78 +17,52 @@
  */
 package nrider.ui;
 
+import nrider.core.RideLoad;
 import nrider.ride.RideEvent;
 import nrider.ride.RideScript;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import java.awt.*;
+import java.util.ArrayList;
 
 /**
  *
  */
-public class RideScriptView extends JComponent
+public class RideScriptView extends GraphView
 {
 	private RideScript _rideScript;
-	private int _indicatorX;
-	private double _posScale;
 
 	public RideScriptView()
 	{
 		setMinimumSize( new Dimension( 600, 100 ) );
+		setPreferredSize( new Dimension( 600, 100 ) );
 		setBorder( new BevelBorder( BevelBorder.LOWERED ) );
 	}
 
 	public void setRideScript( RideScript rideScript )
 	{
 		_rideScript = rideScript;
+		ArrayList<GraphPoint> graph = new ArrayList<GraphPoint>( );
+		for( RideEvent re : _rideScript )
+		{
+			graph.add( new GraphPoint( re.getPosition(), re.getLoad().getValue(), getColor( re.getLoad() ) ) );
+		}
+
+		setMaxY( _rideScript.getMaxLoad() );
+		setMaxX( _rideScript.getPeriod() );
+		setShowXIndicator( true );
+		setGraph( graph );
 		repaint();
 	}
 
-	@Override
-	public void paintComponent( Graphics g )
+	private Color getColor( RideLoad load )
 	{
-		super.paintComponent( g );
-
-		if( _rideScript != null )
-		{
-			Rectangle r = g.getClipBounds();
-
-			double maxLoad = _rideScript.getMaxLoad();
-			double loadTrim = 0;
-			if( maxLoad > r.getHeight() )
-			{
-				loadTrim = maxLoad * .1;
-			}
-
-			double loadScale = r.height / ( maxLoad - loadTrim );
-
-			_posScale = r.width / (double) _rideScript.getPeriod();
-
-			int lastX = 0, lastY = r.height;
-			for( RideEvent re : _rideScript )
-			{
-				int nextX = (int) ( re.getPosition() * _posScale );
-				int nextY = r.height - (int) ( ( re.getLoad().getValue() - loadTrim ) * loadScale );
-
-				g.drawLine( lastX, lastY, nextX, nextY );
-				lastX = nextX;
-				lastY = nextY;
-			}
-			g.setXORMode( Color.GREEN );
-			g.fillRect( _indicatorX, 0, 3, r.height );
-			g.setPaintMode();
-
-		}
+		return new Color( 211, 211, 211 );
 	}
 
 	public void setRideTime( long rideTime )
 	{
-		int nextIndicatorX = (int) ( rideTime * _posScale );
-		if( _indicatorX != nextIndicatorX )
-		{
-		 	_indicatorX = nextIndicatorX;
-			repaint();
-		}
+		setXIndicator( rideTime );
 	}
 }

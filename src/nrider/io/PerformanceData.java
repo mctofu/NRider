@@ -31,6 +31,16 @@ public class PerformanceData
 	private Type _type;
 	private float _value;
 
+	public PerformanceData()
+	{
+	}
+
+	public PerformanceData( Type type, float value )
+	{
+		_type = type;
+		_value = value;
+	}
+
 	public Type getType()
 	{
 		return _type;
