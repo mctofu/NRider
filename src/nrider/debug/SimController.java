@@ -130,7 +130,7 @@ public class SimController implements IWorkoutController, IPerformanceDataSource
 				}
 
 				publishPerformanceData( new PerformanceData( PerformanceData.Type.POWER, (float) _currentPower ) );
-				publishPerformanceData( new PerformanceData( PerformanceData.Type.SPEED, (float) _currentSpeed + ( new Random( ).nextFloat() * 2 - 1 ) ) );
+				publishPerformanceData( new PerformanceData( PerformanceData.Type.SPEED, (float) ( _currentSpeed + ( ( new Random( ).nextFloat() * 2 - 1 ) / 2.237 ) ) ) );
 			}
 		}
 	}
