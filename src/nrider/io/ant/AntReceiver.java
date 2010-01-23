@@ -41,13 +41,14 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 
 	private static final byte[] ANT_PLUS_SPORT_CHANNEL_KEY = new byte[] { (byte) 0xB9, (byte) 0xA5, 0x21, (byte) 0xFB, (byte) 0xBD, 0x72, (byte) 0xC3, 0x45 };
 	private static final int ANT_PLUS_SPORT_FREQUENCY = 0x39;
-	private static final int ANT_PLUS_SPORT_PERIOD = 0x1f86;
+	private static final int ANT_PLUS_SPORT_HRM_PERIOD = 0x0086;
+	private static final int ANT_PLUS_SPORT_PM_PERIOD = 0x01f6;
 	private static final byte ANT_MSG_RESET_SYSTEM = (byte) 0x4a;
 	private static final byte ANT_MSG_REQUEST_MESSAGE = (byte) 0x4d;
 	private static final byte ANT_MSG_ASSIGN_CHANNEL = (byte) 0x42;
 	private static final byte ANT_MSG_SET_CHANNEL_ID = (byte) 0x51;
 	private static final byte ANT_MSG_SET_NETWORK_KEY = (byte) 0x46;
-	private static final byte ANT_MSG_SET_CHANNEL_SEARCH_TIMEOUT = (byte) 0x44;
+	private static final byte ANT_MSG_SET_CHANNEL_SEARCH_TIMEOUT = (byte) 0x1e;
 	private static final byte ANT_MSG_SET_RADIO_FREQUENCY = (byte) 0x45;
 	private static final byte ANT_MSG_SET_MESSAGE_PERIOD = (byte) 0x43;
 	private static final byte ANT_MSG_OPEN_CHANNEL = (byte) 0x4B;
@@ -289,7 +290,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		sendMessage( ANT_MSG_SET_CHANNEL_ID, new byte[] { channelId, 0, 0, 0, 0 } ); // channel 0, any device (2 byte), no pairing (bit), any device type (7 bits), any tranmission type
 		sendMessage( ANT_MSG_SET_CHANNEL_SEARCH_TIMEOUT, new byte[] { channelId, 2 });
 		sendMessage( ANT_MSG_SET_RADIO_FREQUENCY, new byte[] { channelId, ANT_PLUS_SPORT_FREQUENCY});
-		sendMessage( ANT_MSG_SET_MESSAGE_PERIOD, new byte[] { channelId, (byte) ANT_PLUS_SPORT_PERIOD % 256, (byte) ANT_PLUS_SPORT_PERIOD / 256 } );
+		sendMessage( ANT_MSG_SET_MESSAGE_PERIOD, new byte[] { channelId, (byte) ANT_PLUS_SPORT_HRM_PERIOD % 256, (byte) ANT_PLUS_SPORT_HRM_PERIOD / 256 } );
 	}
 
 	private void sendResetSystem()

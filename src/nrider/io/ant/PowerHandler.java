@@ -17,8 +17,10 @@ public class PowerHandler extends BaseHandler
 {
     private final static Logger LOG = Logger.getLogger( PowerHandler.class );
 
-    private int _powerTrack;
-    private int _seqTrack;    
+    private int _rTrack;
+    private int _pTrack;
+	private int _tTrack;
+	private int _seqTrack;
 
     public PowerHandler( EventPublisher<IPerformanceDataListener> publisher )
     {
@@ -45,19 +47,31 @@ public class PowerHandler extends BaseHandler
         LOG.debug( pDebug );
         if( data[0] == 0x12 )
         {
-            int powerRRD = ( ( (int) data[6] & 0xFF ) + ( (int) data[7] & 0xFF ) * 256 );
-            int power = powerRRD - _powerTrack;
-            int seq = ( (int) data[1] & 0xFF );
-            if( seq - _seqTrack > 0 )
-            {
-                power = power / (seq - _seqTrack);
-            }
-            _seqTrack = seq;
-            _powerTrack = powerRRD;
+			int rRRD = (int) data[2];
+			int r = rRRD - _rTrack;
+			_rTrack = rRRD;
+
+            int pRRD = ( ( (int) data[4] & 0xFF ) + ( (int) data[5] & 0xFF ) * 256 );
+            int p = pRRD - _pTrack;
+			_pTrack = pRRD;
+
+			int tRRD = ( ( (int) data[6] & 0xFF ) + ( (int) data[7] & 0xFF ) * 256 );
+			int t = tRRD - _tTrack;
+			_tTrack = tRRD;
+
+            int seqRRD = ( (int) data[1] & 0xFF );
+			int seqDiff = seqRRD - _seqTrack;
+			_seqTrack = seqRRD;
+
+			int msgCadence = (int) data[3] & 0xFF;
+
+			double force = t / ( r * 32 );
+			double cadence = Math.abs( r ) * 122880.0 / Math.abs( p );
+			double watts = cadence * force * 2 * Math.PI / 60;
 
             final PerformanceData pd2 = new PerformanceData();
             pd2.setType( PerformanceData.Type.EXT_CADENCE );
-            pd2.setValue( (int) data[3] & 0xFF );
+            pd2.setValue( (float) cadence );
             publishEvent( new IEvent<IPerformanceDataListener>()
                 {
                 public void trigger( IPerformanceDataListener target )
@@ -68,7 +82,7 @@ public class PowerHandler extends BaseHandler
 
             final PerformanceData powerData = new PerformanceData();
             powerData.setType( PerformanceData.Type.EXT_POWER );
-            powerData.setValue( power / 3 );
+            powerData.setValue( (float) watts );
             publishEvent( new IEvent<IPerformanceDataListener>()
                 {
                 public void trigger( IPerformanceDataListener target )
@@ -76,8 +90,6 @@ public class PowerHandler extends BaseHandler
                     target.handlePerformanceData( "pwr", powerData );
                 }
             }      );
-
         }
-
     }
 }
