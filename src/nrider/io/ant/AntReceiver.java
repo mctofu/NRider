@@ -37,18 +37,45 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 {
-	private final static Logger LOG = Logger.getLogger( AntReceiver.class );	
+	private final static Logger LOG = Logger.getLogger( AntReceiver.class );
+
+	private enum Device
+	{
+		HRM ( ANT_PLUS_SPORT_HRM_TYPE, ANT_PLUS_SPORT_HRM_PERIOD ),
+		PM ( ANT_PLUS_SPORT_PM_TYPE, ANT_PLUS_SPORT_PM_PERIOD );
+
+		private byte _type;
+		private int _period;
+
+		private Device( byte type, int period )
+		{
+			_type = type;
+			_period = period;
+		}
+
+		public byte getType()
+		{
+			return _type;
+		}
+
+		public int getPeriod()
+		{
+			return _period;
+		}
+	};
 
 	private static final byte[] ANT_PLUS_SPORT_CHANNEL_KEY = new byte[] { (byte) 0xB9, (byte) 0xA5, 0x21, (byte) 0xFB, (byte) 0xBD, 0x72, (byte) 0xC3, 0x45 };
 	private static final int ANT_PLUS_SPORT_FREQUENCY = 0x39;
-	private static final int ANT_PLUS_SPORT_HRM_PERIOD = 0x0086;
-	private static final int ANT_PLUS_SPORT_PM_PERIOD = 0x01f6;
+	private static final byte ANT_PLUS_SPORT_HRM_TYPE = 0x78;
+	private static final byte ANT_PLUS_SPORT_PM_TYPE =  0x0B;
+	private static final int ANT_PLUS_SPORT_HRM_PERIOD = 0x1f86;
+	private static final int ANT_PLUS_SPORT_PM_PERIOD = 0x1ff6;
 	private static final byte ANT_MSG_RESET_SYSTEM = (byte) 0x4a;
 	private static final byte ANT_MSG_REQUEST_MESSAGE = (byte) 0x4d;
 	private static final byte ANT_MSG_ASSIGN_CHANNEL = (byte) 0x42;
 	private static final byte ANT_MSG_SET_CHANNEL_ID = (byte) 0x51;
 	private static final byte ANT_MSG_SET_NETWORK_KEY = (byte) 0x46;
-	private static final byte ANT_MSG_SET_CHANNEL_SEARCH_TIMEOUT = (byte) 0x1e;
+	private static final byte ANT_MSG_SET_CHANNEL_SEARCH_TIMEOUT = (byte) 0x44;
 	private static final byte ANT_MSG_SET_RADIO_FREQUENCY = (byte) 0x45;
 	private static final byte ANT_MSG_SET_MESSAGE_PERIOD = (byte) 0x43;
 	private static final byte ANT_MSG_OPEN_CHANNEL = (byte) 0x4B;
@@ -221,24 +248,24 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 			_channelDevices.put( antData.getChannelId(), deviceInfo );
             switch( deviceInfo.getDeviceType() )
             {
-                case 120:
+                case ANT_PLUS_SPORT_HRM_TYPE:
                     LOG.debug( "HRM" );
                     _channelHandlers[antData.getChannelId()] = new HrmHandler( _eventPublisher );
                     break;
-                case 11:
+                case ANT_PLUS_SPORT_PM_TYPE:
                     LOG.debug( "Power Meter" );
                     _channelHandlers[antData.getChannelId()] = new PowerHandler( _eventPublisher );
                     break;
             }
 
 			// look for another device
-			_msgHandlerExecutor.execute( new Runnable() {
-				public void run()
-				{
-					setupChannel( (byte) ( antData.getChannelId() + 1 ) );
-					sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { (byte) ( antData.getChannelId() + 1 ) });
-				}
-			});
+//			_msgHandlerExecutor.execute( new Runnable() {
+//				public void run()
+//				{
+//					setupChannel( (byte) ( antData.getChannelId() + 1 ) );
+//					sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { (byte) ( antData.getChannelId() + 1 ) });
+//				}
+//			});
 			return true;
 		}
 
@@ -277,20 +304,19 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		System.arraycopy( ANT_PLUS_SPORT_CHANNEL_KEY, 0, networkKeyMsg, 1, 8 );
 		sendMessage( ANT_MSG_SET_NETWORK_KEY, networkKeyMsg );
 
-
-		setupChannel( (byte) 0 );
-//		setupChannel( (byte) 1 );
+		setupChannel( (byte) 0, Device.PM );
+		setupChannel( (byte) 1, Device.HRM );
 		sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { 0 });
-//		sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { 1 });
+		sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { 1 });
 	}
 
-	private void setupChannel( byte channelId )
+	private void setupChannel( byte channelId, Device device )
 	{
-		sendMessage( ANT_MSG_ASSIGN_CHANNEL, new byte[] { channelId, 0, 1 } ); // channel 0, receive channel, ant + sport net
-		sendMessage( ANT_MSG_SET_CHANNEL_ID, new byte[] { channelId, 0, 0, 0, 0 } ); // channel 0, any device (2 byte), no pairing (bit), any device type (7 bits), any tranmission type
-		sendMessage( ANT_MSG_SET_CHANNEL_SEARCH_TIMEOUT, new byte[] { channelId, 2 });
-		sendMessage( ANT_MSG_SET_RADIO_FREQUENCY, new byte[] { channelId, ANT_PLUS_SPORT_FREQUENCY});
-		sendMessage( ANT_MSG_SET_MESSAGE_PERIOD, new byte[] { channelId, (byte) ANT_PLUS_SPORT_HRM_PERIOD % 256, (byte) ANT_PLUS_SPORT_HRM_PERIOD / 256 } );
+		sendMessage( ANT_MSG_ASSIGN_CHANNEL, new byte[] { channelId, 0, 1 } ); // channel, receive channel, ant + sport net
+		sendMessage( ANT_MSG_SET_CHANNEL_ID, new byte[] { channelId, 0, 0, device.getType(), 0 } ); // channel, any device (2 byte), no pairing (bit), any device type (7 bits), any tranmission type
+		sendMessage( ANT_MSG_SET_CHANNEL_SEARCH_TIMEOUT, new byte[] { channelId, 0x1e });
+		sendMessage( ANT_MSG_SET_RADIO_FREQUENCY, new byte[] { channelId, ANT_PLUS_SPORT_FREQUENCY });
+		sendMessage( ANT_MSG_SET_MESSAGE_PERIOD, new byte[] { channelId, (byte) ( device.getPeriod() % 256 ), (byte) ( device.getPeriod() / 256 ) } );
 	}
 
 	private void sendResetSystem()
