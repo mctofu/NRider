@@ -35,7 +35,7 @@ public interface IWorkoutListener extends EventListener
 	public void handleRiderThresholdAdjust( String riderId, double newThreshold );
 	public void handleRideLoaded( IRide ride );
 	public void handleRideTimeUpdate( long rideTime );
-	public void handleRiderDistanceUpdate( String riderId, double distance );
 	public void handleAddRiderAlert( String riderId, WorkoutSession.RiderAlertType type );
 	public void handleRemoveRiderAlert( String riderId, WorkoutSession.RiderAlertType type );
+	public void handleRideStatusUpdate( IRide.Status status );
 }

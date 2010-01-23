@@ -33,10 +33,12 @@ public class RiderSession
 	private int _handicap;
 	private RideLoad _currentLoad;
 	private List<String> _associations = new ArrayList<String>();
+	private String _source;
 
-	public RiderSession( Rider rider )
+	public RiderSession( Rider rider, String source )
 	{
 		_rider = rider;
+		_source = source;
 	}
 
 	public Rider getRider()
@@ -67,6 +69,11 @@ public class RiderSession
 	public void addAssociation( String identifier )
 	{
 		_associations.add( identifier );		
+	}
+
+	public String getSource()
+	{
+		return _source;
 	}
 
 	/*

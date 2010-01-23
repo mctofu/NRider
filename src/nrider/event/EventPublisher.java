@@ -30,7 +30,7 @@ import java.util.concurrent.Executors;
  * Time: 10:02:15 PM
  * To change this template use File | Settings | File Templates.
  */
-public class EventPublisher<T>
+public class EventPublisher<T> implements IEventPublisher<T>
 {
 	private List<T> _listeners = new ArrayList<T>();
 	private static HashMap<String, Executor> _executorMap = new HashMap<String, Executor>();

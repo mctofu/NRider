@@ -27,7 +27,7 @@ public class AddRider extends BaseCommand
 		Rider rider = new Rider();
 		rider.setName( args[0] );
 		rider.setThresholdPower( Integer.parseInt( args[1] ) );
-		WorkoutSession.instance().addRider( rider );
+		WorkoutSession.instance().addLocalRider( rider );
 		return null;
 	}
 }

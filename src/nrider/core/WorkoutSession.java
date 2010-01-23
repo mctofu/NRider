@@ -21,6 +21,8 @@ import gnu.io.PortInUseException;
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 import nrider.io.*;
+import nrider.net.NRiderServer;
+import nrider.net.NetSource;
 import nrider.ride.IRide;
 import org.apache.log4j.Logger;
 
@@ -50,14 +52,17 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	private List<IWorkoutController> _controllers = new ArrayList<IWorkoutController>();
 	private Map<String, RiderSession> _deviceMap = new HashMap<String, RiderSession>();
 	private Map<String, RiderSession> _riderMap = new HashMap<String, RiderSession>();
-	private EventPublisher<IPerformanceDataListener> _performancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
+	private EventPublisher<IPerformanceDataListener> _netPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
+	private EventPublisher<IPerformanceDataListener> _localPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
+
 	private EventPublisher<IWorkoutListener> _workoutPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private IRide _ride;
 	private RiderPerformanceMonitor _riderPerformanceMonitor = new RiderPerformanceMonitor();
+	private NetSource _netSource;
 
 	public WorkoutSession()
 	{
-		addPerformanceDataListener( _riderPerformanceMonitor );
+		addLocalPerformanceDataListener( _riderPerformanceMonitor );
 	}
 
 	public void setRideElapsedTime( final long elapsed )
@@ -84,10 +89,20 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	}
 
-	public void addRider( final Rider rider )
+	public void addLocalRider( final Rider rider )
+	{
+		addRider( rider, "local" );
+	}
+
+	public void addNetRider( final Rider rider, String source )
+	{
+		addRider( rider, source );
+	}
+
+	private void addRider( final Rider rider, String source )
 	{
 		_riders.add( rider );
-		RiderSession session = new RiderSession( rider );
+		RiderSession session = new RiderSession( rider, source );
 		_riderMap.put( rider.getIdentifier(), session );
 		_workoutPublisher.publishEvent(
 			new IEvent<IWorkoutListener>() {
@@ -237,6 +252,14 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 				{
 					_ride.start();
 					_riderPerformanceMonitor.activate();
+					_workoutPublisher.publishEvent(
+						new IEvent<IWorkoutListener>() {
+							public void trigger( IWorkoutListener target )
+							{
+								target.handleRideStatusUpdate( _ride.getStatus() );
+							}
+						});
+
 				}
 			}
 		}
@@ -252,6 +275,13 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 				{
 					_ride.pause();
 					_riderPerformanceMonitor.deactivate();
+					_workoutPublisher.publishEvent(
+						new IEvent<IWorkoutListener>() {
+							public void trigger( IWorkoutListener target )
+							{
+								target.handleRideStatusUpdate( _ride.getStatus() );
+							}
+						});
 				}
 			}
 		}
@@ -262,18 +292,37 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 		return "NRider WorkoutSession";
 	}
 
-	public void addPerformanceDataListener( IPerformanceDataListener listener )
+	/**
+	 * subscribe to performance data from local riders
+	 * @param listener
+	 */
+	public void addLocalPerformanceDataListener( IPerformanceDataListener listener )
 	{
-		_performancePublisher.addListener( listener );
+		_localPerformancePublisher.addListener( listener );
 	}
 
+	/**
+	 * subscribe to performance data from local and net riders
+	 * @param listener
+	 */
+	public void addPerformanceDataListener( IPerformanceDataListener listener )
+	{
+		_netPerformancePublisher.addListener( listener );
+		_localPerformancePublisher.addListener( listener );
+	}
+
+	/**
+	 * handle raw perf data from a controller and publish rider perf data
+	 * @param identifier
+	 * @param data
+	 */
 	public void handlePerformanceData( String identifier, final PerformanceData data )
 	{
 		// TODO: Need to examine all event handling and evaluate need for a separate thread so a slow handler won't hang up everything.
 		if( _deviceMap.containsKey( identifier ) )
 		{
 			final RiderSession rs = _deviceMap.get( identifier );
-			_performancePublisher.publishEvent(
+			getPublisher( rs ).publishEvent(
 				new IEvent<IPerformanceDataListener>() {
 					public void trigger( IPerformanceDataListener target )
 					{
@@ -281,6 +330,15 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 					}
 				});
 		}
+	}
+
+	private EventPublisher<IPerformanceDataListener> getPublisher( RiderSession session )
+	{
+		if( session.getSource().equals( "local" ) )
+		{
+			return _localPerformancePublisher;
+		}
+		return _netPerformancePublisher;
 	}
 
 	public void handleControlData( String identifier, ControlData data )
@@ -334,7 +392,6 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 		Rider rider = getRider( identifier );
 		rider.setThresholdPower( thresholdPower );
 		reapplyRiderLoad( identifier );
-		// TODO: if in a workout should adjust load on their trainer
 		_workoutPublisher.publishEvent(
 			new IEvent<IWorkoutListener>() {
 				public void trigger( IWorkoutListener target )
@@ -362,5 +419,13 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 				break;
 			}
 		}
+	}
+
+	public void setNetSource( NetSource netSource )
+	{
+		_netSource = netSource;
+		addPerformanceDataListener( netSource );
+		addPerformanceDataSource( netSource );
+		addWorkoutListener( netSource );
 	}
 }

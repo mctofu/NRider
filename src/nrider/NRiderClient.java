@@ -132,7 +132,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 		});
 	}
 
-	public void handleRiderDistanceUpdate( String riderId, double distance )
+	public void handleRideStatusUpdate( IRide.Status status )
 	{
 		//To change body of implemented methods use File | Settings | File Templates.
 	}
@@ -427,7 +427,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 
 		public void setThreshold( double threshold )
 		{
-			_riderThreshold.setText( threshold + "" );
+			_riderThreshold.setText( new DecimalFormat( "0" ).format( threshold ) );
 		}
 
 		public void setExtHeartRate( float hr )
