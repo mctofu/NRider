@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.TooManyListenersException;
 
@@ -36,6 +37,7 @@ public abstract class SerialDevice implements SerialPortEventListener
 	private SerialPort _serialPort;
 	private OutputStream _output;
 	private InputStream _input;
+	private static ArrayList<CommPortIdentifier> _commPortIdentifiers = new ArrayList<CommPortIdentifier>();
 
 	public CommPortIdentifier getCommPortId()
 	{
@@ -52,12 +54,33 @@ public abstract class SerialDevice implements SerialPortEventListener
 		return _input;
 	}
 
+	public static ArrayList<CommPortIdentifier> getPortIdentifiers()
+	{
+		// errors happen if we call getPortIdentifiers more than once so cache the results.  maybe upgrading the rxtx library would help.
+		synchronized( _commPortIdentifiers )
+		{
+			if( _commPortIdentifiers.size() == 0 )
+			{
+				Enumeration commPortIds = CommPortIdentifier.getPortIdentifiers();
+				while( commPortIds.hasMoreElements() )
+				{
+					CommPortIdentifier commPortId = (CommPortIdentifier) commPortIds.nextElement();
+					if( commPortId.getPortType() == CommPortIdentifier.PORT_SERIAL )
+					{
+						_commPortIdentifiers.add( commPortId );
+					}
+				}
+			}
+		}
+		return _commPortIdentifiers;
+	}
+
+
 	public void setCommPortName( String name )
 	{
-		Enumeration commPortIds = CommPortIdentifier.getPortIdentifiers();
-		while( commPortIds.hasMoreElements() )
+		ArrayList<CommPortIdentifier> commPortIds = getPortIdentifiers();
+		for( CommPortIdentifier commPortId : commPortIds )
 		{
-			CommPortIdentifier commPortId = (CommPortIdentifier) commPortIds.nextElement();
 			if( commPortId.getPortType() == CommPortIdentifier.PORT_SERIAL && commPortId.getName().equals( name ) )
 			{
 				_commPortId = commPortId;

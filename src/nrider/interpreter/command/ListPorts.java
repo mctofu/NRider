@@ -2,9 +2,11 @@ package nrider.interpreter.command;
 
 import gnu.io.CommPortIdentifier;
 import nrider.interpreter.BaseCommand;
+import nrider.io.SerialDevice;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Enumeration;
 
 /**
@@ -25,10 +27,9 @@ public class ListPorts extends BaseCommand
 	{
 		StringWriter sw = new StringWriter();
 		PrintWriter pw = new PrintWriter( sw );
-		Enumeration comms = CommPortIdentifier.getPortIdentifiers();
-		while( comms.hasMoreElements() )
+		ArrayList<CommPortIdentifier> commPortIds = SerialDevice.getPortIdentifiers();
+		for( CommPortIdentifier id : commPortIds )
 		{
-			CommPortIdentifier id = (CommPortIdentifier) comms.nextElement();
 			pw.println( id.getName() );
 		}
 		return sw.toString();
