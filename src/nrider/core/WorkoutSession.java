@@ -45,7 +45,19 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	}
 
 	public enum RiderAlertType {
-		SPEED_HIGH, SPEED_LOW, POWER_ASSIST
+		SPEED_HIGH( "SpdHi" ), SPEED_LOW( "SpdLo" ), POWER_ASSIST( "PwrBst" );
+
+		private String _shortName;
+
+		RiderAlertType( String shortName )
+		{
+			_shortName = shortName;
+		}
+
+		public String getShortName()
+		{
+			return _shortName;
+		}
 	}
 
 	private List<Rider> _riders = new ArrayList<Rider>();

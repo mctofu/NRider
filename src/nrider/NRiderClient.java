@@ -353,7 +353,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			_extCadence.setVisible( false );
 			addPerformanceStatView( _extCadence, c );
 
-			_extPower = new PerformanceStatView( 0, 500, 60, new DecimalFormat( "0" ) );
+			_extPower = new PerformanceStatView( 0, rider.getThresholdPower() * 1.1, 60, new DecimalFormat( "0" ) );
 			c.gridy = 8;
 			_extPower.setVisible( false );
 			addPerformanceStatView( _extPower, c );
@@ -473,7 +473,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			StringBuilder sb = new StringBuilder();
 			for( WorkoutSession.RiderAlertType alert : _alerts )
 			{
-				sb.append( alert.toString() );
+				sb.append( alert.getShortName() );
 				sb.append( " " );
 			}
 			_alert.setText( sb.toString() );
