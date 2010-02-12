@@ -25,7 +25,7 @@ import javax.swing.text.DefaultCaret;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- *
+ * Simple appender that logs to a jframe.
  */
 public class DebugAppender extends AppenderSkeleton
 {
@@ -51,39 +51,36 @@ public class DebugAppender extends AppenderSkeleton
 
 	private void init()
 	{
-		SwingUtilities.invokeLater( new Runnable()
-		{
-			public void run()
-			{
-				_window = new JFrame();
-				_window.setTitle( getName() );
-				_window.setSize(500, 500);
-				_window.setLocation( 500, 0 );
+		_window = new JFrame();
+		_window.setTitle( getName() );
+		_window.setSize(500, 500);
+		_window.setLocation( 500, 0 );
 
-				_text = new JTextArea();
-				_text.setLineWrap( true );
-				DefaultCaret caret = (DefaultCaret)_text.getCaret();
-				caret.setUpdatePolicy( DefaultCaret.ALWAYS_UPDATE);
-				_window.getContentPane().add( new JScrollPane( _text ) );
-				_window.setVisible(true);
-				_init.set( true );
-			}
-		});
-
+		_text = new JTextArea();
+		_text.setLineWrap( true );
+		DefaultCaret caret = (DefaultCaret)_text.getCaret();
+		caret.setUpdatePolicy( DefaultCaret.ALWAYS_UPDATE);
+		_window.getContentPane().add( new JScrollPane( _text ) );
+		_window.setVisible(true);
+		_init.set( true );
 	}
 
 	@Override
 	protected void append( final LoggingEvent loggingEvent )
 	{
-		if( !_init.get() )
-		{
-			init();
-		}
 		SwingUtilities.invokeLater( new Runnable()
 		{
 			public void run()
 			{
-				_text.append( loggingEvent.getRenderedMessage() + "\n" );
+				if( !_init.get() )
+				{
+					init();
+				}
+
+				if( _window.isVisible() )
+				{
+					_text.append( loggingEvent.getRenderedMessage() + "\n" );
+				}
 			}
 		});
 	}
