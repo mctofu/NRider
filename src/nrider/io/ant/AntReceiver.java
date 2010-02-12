@@ -19,13 +19,11 @@ package nrider.io.ant;
 
 import gnu.io.*;
 import nrider.event.EventPublisher;
-import nrider.event.IEvent;
 import nrider.io.*;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -64,6 +62,8 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		}
 	};
 
+	private static final Device[] SEARCH_DEVICES = { Device.HRM, Device.PM };
+
 	private static final byte[] ANT_PLUS_SPORT_CHANNEL_KEY = new byte[] { (byte) 0xB9, (byte) 0xA5, 0x21, (byte) 0xFB, (byte) 0xBD, 0x72, (byte) 0xC3, 0x45 };
 	private static final int ANT_PLUS_SPORT_FREQUENCY = 0x39;
 	private static final byte ANT_PLUS_SPORT_HRM_TYPE = 0x78;
@@ -88,7 +88,9 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 	private AtomicInteger _expectedMsgId = new AtomicInteger();
 	private HashMap<Integer,DeviceInfo> _channelDevices = new HashMap<Integer, DeviceInfo>();
     private IMessageHandler[] _channelHandlers = new IMessageHandler[20];
-
+	private HashMap<Device,Integer> _activeSearches = new HashMap<Device,Integer>( );
+	private Queue<Integer> _availableChannels = new LinkedList<Integer>( );
+	private int _maxChannelId = -1;
 
 	private EventPublisher<IPerformanceDataListener> _eventPublisher = EventPublisher.directPublisher();
 
@@ -134,9 +136,15 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 
 						LOG.debug( sb.toString() );
 						sb = new StringBuilder();
-						if( handleMessage( msg ) )
+						try
 						{
-							_responseWaitSemaphore.release();
+							if( handleMessage( msg ) )
+							{
+								_responseWaitSemaphore.release();
+							}
+						} catch( Exception e )
+						{
+							LOG.error( "Error handling ant message", e );
 						}
 					}
 				}
@@ -160,13 +168,13 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
             }
 			if( !_channelDevices.containsKey( antData.getChannelId() ) )
 			{
+				// TODO: Is there still any point in doing this since we are doing specific device searches?
+				// query to find the device type
 				_msgHandlerExecutor.execute( new Runnable()
 					{
 						public void run() {
 							sendMessage( ANT_MSG_REQUEST_MESSAGE, new byte[] { (byte) antData.getChannelId(), ANT_MSG_SET_CHANNEL_ID } );						}
 					});
-
-
 			}
 
 			return false;
@@ -186,7 +194,38 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 						LOG.debug("Success");
 						break;
 					case 1:
-						LOG.debug("Search timeout");
+						LOG.debug("Search timeout");  // search timeout or lost communication with a device.
+						synchronized( _activeSearches )
+						{
+							// if we were searching for a device and didn't find anything clear state so we can try again
+							Device removeDevice = null;
+							for( Map.Entry<Device, Integer> deviceChannelEntry : _activeSearches.entrySet() )
+							{
+								if( antData.getChannelId() == deviceChannelEntry.getValue() )
+								{
+									removeDevice = deviceChannelEntry.getKey();
+									break;
+								}
+							}
+							if( removeDevice != null )
+							{
+								clearSearch( removeDevice );
+							}
+
+							// cleanup if a device was previously found
+							_channelDevices.remove( antData.getChannelId() );
+							_channelHandlers[antData.getChannelId()] = null;
+
+							// this channel id is available for use again.
+							_availableChannels.add( antData.getChannelId() );
+
+							_msgHandlerExecutor.execute( new Runnable() {
+								public void run()
+								{
+									searchDevices();
+								}
+							});
+						}
 						break;
 					case 2:
 						LOG.debug("Event RX Fail");
@@ -245,32 +284,37 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		{
 			DeviceInfo deviceInfo = new DeviceInfo( ( (int) antData.getData()[0] & 0xFF ) + ( (int) antData.getData()[1] & 0xFF ) * 255, (int) antData.getData()[2] & 0xFF );
 			LOG.debug("Found device " + deviceInfo.getDeviceNumber() + "/" + deviceInfo.getDeviceType() + " on channel " + antData.getChannelId() );
-			_channelDevices.put( antData.getChannelId(), deviceInfo );
-            switch( deviceInfo.getDeviceType() )
-            {
-                case ANT_PLUS_SPORT_HRM_TYPE:
-                    LOG.debug( "HRM" );
-                    _channelHandlers[antData.getChannelId()] = new HrmHandler( _eventPublisher );
-                    break;
-                case ANT_PLUS_SPORT_PM_TYPE:
-                    LOG.debug( "Power Meter" );
-                    _channelHandlers[antData.getChannelId()] = new PowerHandler( _eventPublisher );
-                    break;
-            }
+			synchronized( _activeSearches )
+			{
+				_channelDevices.put( antData.getChannelId(), deviceInfo );
+				switch( deviceInfo.getDeviceType() )
+				{
+					case ANT_PLUS_SPORT_HRM_TYPE:
+						LOG.debug( "HRM" );
+						_channelHandlers[antData.getChannelId()] = new HrmHandler( _eventPublisher );
+						break;
+					case ANT_PLUS_SPORT_PM_TYPE:
+						LOG.debug( "Power Meter" );
+						_channelHandlers[antData.getChannelId()] = new PowerHandler( _eventPublisher );
+						break;
+				}
 
-			// look for another device
-//			_msgHandlerExecutor.execute( new Runnable() {
-//				public void run()
-//				{
-//					setupChannel( (byte) ( antData.getChannelId() + 1 ) );
-//					sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { (byte) ( antData.getChannelId() + 1 ) });
-//				}
-//			});
+				clearSearch( deviceInfo.getDevice() );
+			}
+
+			_msgHandlerExecutor.execute( new Runnable() {
+				public void run()
+				{
+					searchDevices();
+				}
+			});
+
 			return true;
 		}
 
 		return false;
 	}
+
 
 
 	@Override
@@ -304,19 +348,62 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		System.arraycopy( ANT_PLUS_SPORT_CHANNEL_KEY, 0, networkKeyMsg, 1, 8 );
 		sendMessage( ANT_MSG_SET_NETWORK_KEY, networkKeyMsg );
 
-		setupChannel( (byte) 0, Device.PM );
-		setupChannel( (byte) 1, Device.HRM );
-		sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { 0 });
-		sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { 1 });
+		searchDevices();
+
 	}
 
-	private void setupChannel( byte channelId, Device device )
+	private void searchDevices()
+	{
+		synchronized( _activeSearches )
+		{
+			for( final Device d : SEARCH_DEVICES )
+			{
+				if( !_activeSearches.containsKey( d ) )
+				{
+					final int channelId = obtainOpenChannelId();
+
+					_activeSearches.put( d, channelId );
+
+					_msgHandlerExecutor.execute( new Runnable() {
+							public void run()
+							{
+								searchChannel( (byte) ( channelId ), d );
+							}
+						});
+				}
+			}
+		}
+	}
+
+	private void clearSearch( Device device )
+	{
+		synchronized( _activeSearches )
+		{
+			_activeSearches.remove( device );
+		}
+	}
+
+	private int obtainOpenChannelId()
+	{
+		synchronized( _activeSearches )
+		{
+			if( _availableChannels.size() > 0 )
+			{
+				return _availableChannels.remove();
+			}
+			_maxChannelId++;
+			return _maxChannelId;
+		}
+	}
+
+	private void searchChannel( byte channelId, Device device )
 	{
 		sendMessage( ANT_MSG_ASSIGN_CHANNEL, new byte[] { channelId, 0, 1 } ); // channel, receive channel, ant + sport net
 		sendMessage( ANT_MSG_SET_CHANNEL_ID, new byte[] { channelId, 0, 0, device.getType(), 0 } ); // channel, any device (2 byte), no pairing (bit), any device type (7 bits), any tranmission type
 		sendMessage( ANT_MSG_SET_CHANNEL_SEARCH_TIMEOUT, new byte[] { channelId, 0x1e });
 		sendMessage( ANT_MSG_SET_RADIO_FREQUENCY, new byte[] { channelId, ANT_PLUS_SPORT_FREQUENCY });
 		sendMessage( ANT_MSG_SET_MESSAGE_PERIOD, new byte[] { channelId, (byte) ( device.getPeriod() % 256 ), (byte) ( device.getPeriod() / 256 ) } );
+		sendMessage( ANT_MSG_OPEN_CHANNEL, new byte[] { channelId });
 	}
 
 	private void sendResetSystem()
@@ -334,7 +421,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		sendMessage( msgId, data, true );
 	}
 
-	private void sendMessage( byte msgId, byte[] data, boolean waitForResponse )
+	private synchronized void sendMessage( byte msgId, byte[] data, boolean waitForResponse )
 	{
 		//Byte # Name Length Description
 		//0 SYNC 1 Byte Fixed value of 10100100 (MSB:LSB)
@@ -423,12 +510,20 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 	{
 		private int _deviceNumber;
 		private int _deviceType;
+		private Device _device;
 		private String _serialNumber;
 
 		DeviceInfo( int deviceNumber, int deviceType )
 		{
 			_deviceNumber = deviceNumber;
 			_deviceType = deviceType;
+			for( Device d : SEARCH_DEVICES )
+			{
+				if( d.getType() == _deviceType )
+				{
+					_device = d;
+				}
+			}
 		}
 
 		public int getDeviceNumber()
@@ -436,19 +531,14 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 			return _deviceNumber;
 		}
 
-		public void setDeviceNumber( int deviceNumber )
-		{
-			_deviceNumber = deviceNumber;
-		}
-
 		public int getDeviceType()
 		{
 			return _deviceType;
 		}
 
-		public void setDeviceType( int deviceType )
+		public Device getDevice()
 		{
-			_deviceType = deviceType;
+			return _device;
 		}
 
 		public String getSerialNumber()
