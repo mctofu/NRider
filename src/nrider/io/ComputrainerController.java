@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Code to communicate with a CompuTrainer
@@ -49,19 +50,23 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	private EventPublisher<IControlDataListener> _controlPublisher = EventPublisher.directPublisher();
 	private PerformanceDataChangePublisher _performanceDataPublisher = new PerformanceDataChangePublisher( "CompuTrainer:Unassigned" );
 	private TrainerMode _mode = TrainerMode.ERG;
-	private double _load = 50;
-	private int _receivedMessagesSinceLastSend = 0;
-	private final Object _msgCountLock = new Object();
+	private volatile double _load = 50;
+
+    private AtomicInteger _receivedMessagesSinceLastSend = new AtomicInteger( 0 );
+
+    private AtomicInteger _msgBufferPos = new AtomicInteger( 0 );
+
+    // used only by receive thread
 	private byte[] _msgBuffer = new byte[7];
-	private int _msgBufferPos = 0;
 	private int _buttons;
+
 	// TODO: does every computrainer really need it's own write thread or can they be shared?
 	private ExecutorService _writeExecutor = Executors.newSingleThreadExecutor();
 	private static Timer _monitor = new Timer();
 	private static MonitorTask _monitorTask = new MonitorTask();
-	private long _lastReadTime;
-	private Status _status = Status.DISCONNECTED;
-	private boolean _lostConnection;
+	private volatile long _lastReadTime;
+	private volatile Status _status = Status.DISCONNECTED;
+    private boolean _lostConnection;
 
 	static
 	{
@@ -87,9 +92,9 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 		return _mode;
 	}
 
-	public void setMode( TrainerMode _mode )
+	public void setMode( TrainerMode mode )
 	{
-		this._mode = _mode;
+		_mode = mode;
 	}
 
 	public double getLoad()
@@ -142,7 +147,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	{
 		try
 		{
-			_msgBufferPos = 0;
+			_msgBufferPos.set( 0 );
 			getOutput().write( "RacerMate".getBytes() );
 			getOutput().flush();
 
@@ -162,21 +167,21 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 				int data;
 				while( ( data = getInput().read() ) > -1 )
 				{
-					_msgBuffer[_msgBufferPos++] = (byte) data;
-					if( _status != Status.CONNECTED && _msgBufferPos == 6 ) // handshake message is different from everything else
+					_msgBuffer[_msgBufferPos.getAndIncrement()] = (byte) data;
+					if( _status != Status.CONNECTED && _msgBufferPos.get() == 6 ) // handshake message is different from everything else
 					{
 						byte[] msg = new byte[6];
 						System.arraycopy( _msgBuffer, 0, msg, 0, 6 );
 						handleMessageReceived( msg );
-						_msgBufferPos = 0;
+						_msgBufferPos.set( 0 );
 						break;
 					}
-					else if( _msgBufferPos == 7 )
+					else if( _msgBufferPos.get() == 7 )
 					{
 						byte[] msg = new byte[7];
 						System.arraycopy( _msgBuffer, 0, msg, 0, 7 );
 						handleMessageReceived( msg );
-						_msgBufferPos = 0;
+						_msgBufferPos.set( 0 );
 						break;
 					}
 				}
@@ -217,12 +222,10 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			handleData( data );
 			boolean needControlMessage;
 			// TODO: this probably doesn't always work right, revisit when cleaning up the send message
-			synchronized( _msgCountLock )
-			{
-				_receivedMessagesSinceLastSend++;
-				needControlMessage = _receivedMessagesSinceLastSend >= 4;
-			}
-			if( needControlMessage )
+
+			needControlMessage = _receivedMessagesSinceLastSend.incrementAndGet() == 4;
+
+            if( needControlMessage )
 			{
 				sendControlMessage( (int) _load );
 			}
@@ -385,10 +388,6 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			{
 				public void run()
 				{
-					synchronized( _msgCountLock )
-					{
-						_receivedMessagesSinceLastSend = 0;
-					}
 					try
 					{
 						getOutput().write( msg );
@@ -398,6 +397,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 					{
 						LOG.error( "Write error on " + getIdentifier(), e );
 					}
+                    _receivedMessagesSinceLastSend.set( 0 );
 				}
 			}
 			);
@@ -412,9 +412,9 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	{
 		if( _status != Status.DISCONNECTED )
 		{
-			_status = Status.DISCONNECTED;
 			_monitorTask.removeCompuTrainer( this );
 			super.close();
+            _status = Status.DISCONNECTED;
 		}
 	}
 

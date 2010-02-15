@@ -21,7 +21,6 @@ import gnu.io.PortInUseException;
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 import nrider.io.*;
-import nrider.net.NRiderServer;
 import nrider.net.NetSource;
 import nrider.ride.IRide;
 import org.apache.log4j.Logger;
@@ -113,16 +112,19 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	private void addRider( final Rider rider, String source )
 	{
-		_riders.add( rider );
-		RiderSession session = new RiderSession( rider, source );
-		_riderMap.put( rider.getIdentifier(), session );
-		_workoutPublisher.publishEvent(
-			new IEvent<IWorkoutListener>() {
-				public void trigger( IWorkoutListener target )
-				{
-					target.handleAddRider( rider );
-				}
-			});
+        synchronized( _riders )
+        {
+            _riders.add( rider );
+            RiderSession session = new RiderSession( rider, source );
+            _riderMap.put( rider.getIdentifier(), session );
+            _workoutPublisher.publishEvent(
+                new IEvent<IWorkoutListener>() {
+                    public void trigger( IWorkoutListener target )
+                    {
+                        target.handleAddRider( rider );
+                    }
+                });
+        }
 	}
 
 	public void addRiderAlert( final String identifier, final RiderAlertType alert )
@@ -150,54 +152,69 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	public List<Rider> getRiders()
 	{
-		return Collections.unmodifiableList( _riders );
+        synchronized( _riders )
+        {
+            return Collections.unmodifiableList( _riders );
+        }
 	}
 
 	public Rider getRider( String identifier )
 	{
-		for( Rider r : _riders )
-		{
-			if( r.getIdentifier().equals( identifier ) )
-			{
-				return r;
-			}
-		}
+        synchronized( _riders )
+        {
+            for( Rider r : _riders )
+            {
+                if( r.getIdentifier().equals( identifier ) )
+                {
+                    return r;
+                }
+            }
+        }
 		return null;
 	}
 
 	public void disconnectControllers()
 	{
-		for( IWorkoutController controller : _controllers )
-		{
-			try
-			{
-		    	controller.disconnect();
-			}
-			catch( IOException e )
-			{
-				LOG.error( e );
-			}
-		}
+        synchronized( _controllers )
+        {
+            for( IWorkoutController controller : _controllers )
+            {
+                try
+                {
+                    controller.disconnect();
+                }
+                catch( IOException e )
+                {
+                    LOG.error( e );
+                }
+            }
+        }
 	}
 
 	public void connectControllers()
 	{
-		for( IWorkoutController controller : _controllers )
-		{
-			try
-			{
-		    	controller.connect();
-			}
-			catch( PortInUseException e )
-			{
-				LOG.error( e );
-			}
-		}
+        synchronized( _controllers )
+        {
+            for( IWorkoutController controller : _controllers )
+            {
+                try
+                {
+                    controller.connect();
+                }
+                catch( PortInUseException e )
+                {
+                    LOG.error( e );
+                }
+            }
+        }
 	}
 
 	public void addWorkoutController( IWorkoutController controller )
 	{
-		_controllers.add( controller );
+        synchronized( _controllers )
+        {
+            _controllers.add( controller );
+        }
 	}
 
 	public void addPerformanceDataSource( IPerformanceDataSource source )
@@ -207,14 +224,20 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	public List<IWorkoutController> getControllers()
 	{
-		return Collections.unmodifiableList( _controllers );
+        synchronized( _controllers )
+        {
+            return Collections.unmodifiableList( _controllers );
+        }
 	}
 
 	public void associateRider( String riderId, String identifier )
 	{
-		RiderSession session = _riderMap.get( riderId );
-		session.addAssociation( identifier );
-		_deviceMap.put( identifier, session );
+        synchronized( _riders )
+        {
+            RiderSession session = _riderMap.get( riderId );
+            session.addAssociation( identifier );
+            _deviceMap.put( identifier, session );
+        }
 	}
 
 	public void setRideLoad( final RideLoad load )
@@ -225,33 +248,42 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	public void setRideLoad( String riderId, final RideLoad load )
 	{
 		// TODO: Support gradient
-		for( IWorkoutController controller : _controllers )
-		{
-			final RiderSession rider = _deviceMap.get( controller.getIdentifier() );
+        synchronized( _controllers )
+        {
+            synchronized( _riders )
+            {
+                for( IWorkoutController controller : _controllers )
+                {
+                    final RiderSession rider = _deviceMap.get( controller.getIdentifier() );
 
-			if( rider == null )
-			{
-				continue;
-			}
+                    if( rider == null )
+                    {
+                        continue;
+                    }
 
-			if( riderId == null || ( rider.getRider().getIdentifier().equals( riderId ) ) )
-			{
-				rider.setCurrentLoad( load );
-				controller.setLoad( rider.getLoadForWorkout() );
-				_workoutPublisher.publishEvent(
-					new IEvent<IWorkoutListener>() {
-						public void trigger( IWorkoutListener target )
-						{
-							target.handleLoadAdjust( rider.getRider().getIdentifier(), load );
-						}
-					});
-			}
-		}
+                    if( riderId == null || ( rider.getRider().getIdentifier().equals( riderId ) ) )
+                    {
+                        rider.setCurrentLoad( load );
+                        controller.setLoad( rider.getLoadForWorkout() );
+                        _workoutPublisher.publishEvent(
+                            new IEvent<IWorkoutListener>() {
+                                public void trigger( IWorkoutListener target )
+                                {
+                                    target.handleLoadAdjust( rider.getRider().getIdentifier(), load );
+                                }
+                            });
+                    }
+                }
+            }
+        }
 	}
 
 	public double getTargetWatts( String riderId )
 	{
-		return _riderMap.get( riderId ).getLoadForWorkoutWithoutHandicap();
+        synchronized( _riders )
+        {
+            return _riderMap.get( riderId ).getLoadForWorkoutWithoutHandicap();
+        }
 	}
 
 	public void startRide()
@@ -330,18 +362,20 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	 */
 	public void handlePerformanceData( String identifier, final PerformanceData data )
 	{
-		// TODO: Need to examine all event handling and evaluate need for a separate thread so a slow handler won't hang up everything.
-		if( _deviceMap.containsKey( identifier ) )
-		{
-			final RiderSession rs = _deviceMap.get( identifier );
-			getPublisher( rs ).publishEvent(
-				new IEvent<IPerformanceDataListener>() {
-					public void trigger( IPerformanceDataListener target )
-					{
-						target.handlePerformanceData( rs.getRider().getIdentifier(), data );
-					}
-				});
-		}
+        synchronized( _riders )
+        {
+            if( _deviceMap.containsKey( identifier ) )
+            {
+                final RiderSession rs = _deviceMap.get( identifier );
+                getPublisher( rs ).publishEvent(
+                    new IEvent<IPerformanceDataListener>() {
+                        public void trigger( IPerformanceDataListener target )
+                        {
+                            target.handlePerformanceData( rs.getRider().getIdentifier(), data );
+                        }
+                    });
+            }
+        }
 	}
 
 	private EventPublisher<IPerformanceDataListener> getPublisher( RiderSession session )
@@ -357,28 +391,30 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	{
 		try
 		{
-			if( _deviceMap.containsKey( identifier ) )
-			{
-				RiderSession rs = _deviceMap.get( identifier );
-				switch( data.getType() )
-				{
-					case PLUS:
-						// TODO: more sense to just set on rider which triggers an event for the workout to adjust the load?
-						setRiderThreshold( rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() + 5 );
-						break;
-					case MINUS:
-						// TODO: more sense to just set on rider which triggers an event for the workout to adjust the load?
-						setRiderThreshold( rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() - 5 );
-						break;
-					case START:
-						startRide();
-						break;
-					case STOP:
-						pauseRide();
-						break;
-				}
-
-			}
+            synchronized( _riders )
+            {
+                if( _deviceMap.containsKey( identifier ) )
+                {
+                    RiderSession rs = _deviceMap.get( identifier );
+                    switch( data.getType() )
+                    {
+                        case PLUS:
+                            // TODO: more sense to just set on rider which triggers an event for the workout to adjust the load?
+                            setRiderThreshold( rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() + 5 );
+                            break;
+                        case MINUS:
+                            // TODO: more sense to just set on rider which triggers an event for the workout to adjust the load?
+                            setRiderThreshold( rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() - 5 );
+                            break;
+                        case START:
+                            startRide();
+                            break;
+                        case STOP:
+                            pauseRide();
+                            break;
+                    }
+                }
+            }
 		}
 		catch( Throwable e )
 		{
@@ -393,44 +429,59 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	public void close() throws IOException
 	{
-		for( IWorkoutController controller : _controllers )
-		{
-			controller.close();
-		}
+        synchronized( _controllers )
+        {
+            for( IWorkoutController controller : _controllers )
+            {
+                controller.close();
+            }
+        }
 	}
 
 	public void setRiderThreshold( final String identifier, final int thresholdPower )
 	{
-		Rider rider = getRider( identifier );
-		rider.setThresholdPower( thresholdPower );
-		reapplyRiderLoad( identifier );
-		_workoutPublisher.publishEvent(
-			new IEvent<IWorkoutListener>() {
-				public void trigger( IWorkoutListener target )
-				{
-					target.handleRiderThresholdAdjust( identifier, thresholdPower );
-				}
-			});
+        synchronized( _riders )
+        {
+            Rider rider = getRider( identifier );
+            rider.setThresholdPower( thresholdPower );
+            reapplyRiderLoad( identifier );
+            _workoutPublisher.publishEvent(
+                new IEvent<IWorkoutListener>() {
+                    public void trigger( IWorkoutListener target )
+                    {
+                        target.handleRiderThresholdAdjust( identifier, thresholdPower );
+                    }
+                });
+        }
 	}
 
 	public void setRiderHandicap( String identifier, final int handicap )
 	{
-		RiderSession rider = _riderMap.get( identifier );
-		rider.setHandicap( handicap );
-		reapplyRiderLoad( identifier );
+        synchronized( _riders )
+        {
+            RiderSession rider = _riderMap.get( identifier );
+            rider.setHandicap( handicap );
+            reapplyRiderLoad( identifier );
+        }
 	}
 
 	private void reapplyRiderLoad( String riderId )
 	{
-		for( IWorkoutController controller : _controllers )
-		{
-			RiderSession rider = _deviceMap.get( controller.getIdentifier() );
-			if( rider != null && rider.getRider().getIdentifier().equals( riderId ) )
-			{
-				controller.setLoad( rider.getLoadForWorkout() );
-				break;
-			}
-		}
+        synchronized( _controllers )
+        {
+            synchronized( _riders )
+            {
+                for( IWorkoutController controller : _controllers )
+                {
+                    RiderSession rider = _deviceMap.get( controller.getIdentifier() );
+                    if( rider != null && rider.getRider().getIdentifier().equals( riderId ) )
+                    {
+                        controller.setLoad( rider.getLoadForWorkout() );
+                        break;
+                    }
+                }
+            }            
+        }
 	}
 
 	public void setNetSource( NetSource netSource )
@@ -440,4 +491,5 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 		addPerformanceDataSource( netSource );
 		addWorkoutListener( netSource );
 	}
+
 }
