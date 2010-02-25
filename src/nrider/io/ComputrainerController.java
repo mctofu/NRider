@@ -127,8 +127,10 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	@Override
 	protected void setupCommParams( SerialPort serialPort ) throws UnsupportedCommOperationException
 	{
-		serialPort.setSerialPortParams(2400,SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
-		serialPort.setFlowControlMode( SerialPort.FLOWCONTROL_RTSCTS_OUT | SerialPort.FLOWCONTROL_RTSCTS_IN );
+		serialPort.setSerialPortParams( 2400, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE );
+		// TODO: Mark's doc said RTS/CTS Flow control used.  It worked on a real serial port and the Sewell USB/Serial but not the FTDI.
+//		serialPort.setFlowControlMode( SerialPort.FLOWCONTROL_RTSCTS_OUT | SerialPort.FLOWCONTROL_RTSCTS_IN );
+		serialPort.setFlowControlMode( SerialPort.FLOWCONTROL_NONE );
 	}
 
 	@Override
@@ -198,12 +200,16 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 
 	public void handleMessageReceived( byte[] msg ) throws IOException
 	{
-//		System.out.print( "Got message: "  );
-//		for( byte b : msg )
+//		if( LOG.isDebugEnabled() )
 //		{
-//			System.out.print( (int) b + "," );
+//			StringBuilder sb = new StringBuilder();
+//			for( byte b : msg )
+//			{
+//				sb.append( HexUtil.toHexString( b ) );
+//				sb.append( " ");
+//			}
+//			LOG.debug( "Recieve " + getCommPortId().getName() + ":" + sb.toString() );
 //		}
-//		System.out.println();
 		if( _status == Status.CONNECTING )
 		{
 			if( "LinkUp".equals( new String(msg) ) )
@@ -468,3 +474,4 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 		}
 	}
 }
+
