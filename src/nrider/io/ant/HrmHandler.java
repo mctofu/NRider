@@ -26,7 +26,7 @@ public class HrmHandler extends BaseHandler
     public void handleMessage( AntData antData )
     {
         byte[] data = antData.getData();
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder( "hrm:" );
         sb.append( HexUtil.toHexString( data[0] ) );
         sb.append( HexUtil.toHexString( data[1] ) );
         sb.append( HexUtil.toHexString( data[2] ) );

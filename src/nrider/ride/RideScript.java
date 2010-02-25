@@ -71,6 +71,61 @@ public class RideScript implements Iterable<RideEvent>
 		}
 	}
 
+	public void adjustLength( double adjustmentFactor )
+	{
+		_period = 0;
+		for( RideEvent re : _script )
+		{
+			double newPosition = re.getPosition() * adjustmentFactor;
+			if( newPosition > _period )
+			{
+				_period = (long) newPosition;
+			}
+			re._position = (long) newPosition;
+		}
+	}
+
+	public void crop( long start, long end )
+	{
+		_period = 0;
+		List<RideEvent> newScript = new ArrayList<RideEvent>();
+		for( RideEvent re : _script )
+		{
+			if( re.getPosition() >= start && re.getPosition() < end )
+			{
+				re._position = re._position - start;
+				if( re._position > _period )
+				{
+					_period = re._position;
+				}
+
+				newScript.add( re );
+			}
+		}
+		_script = newScript;
+	}
+
+	public void append( RideScript script )
+	{
+		long prevPeriod = _period;
+
+		List<RideEvent> newScript = new ArrayList<RideEvent>();
+		newScript.addAll( _script );
+
+		for( RideEvent re : script )
+		{
+			long newPosition = re.getPosition() + prevPeriod;
+			if( newPosition > _period )
+			{
+				_period = newPosition;
+			}
+			re._position = newPosition;
+			newScript.add( re );
+		}
+		_script = newScript;
+	}
+
+
 	public RideLoad getLoad( long position )
 	{
 		// todo: could optimize if too slow.

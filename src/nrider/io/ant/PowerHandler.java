@@ -2,6 +2,7 @@ package nrider.io.ant;
 
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
+import nrider.io.HexUtil;
 import nrider.io.IPerformanceDataListener;
 import nrider.io.PerformanceData;
 import org.apache.log4j.Logger;
@@ -85,7 +86,7 @@ public class PowerHandler extends BaseHandler
 			pDebug.append( " watt: " + watts );
 			LOG.debug( pDebug );
 
-			if( _init )
+			if( _init && _id != null )
 			{
 				final PerformanceData pd2 = new PerformanceData();
 				pd2.setType( PerformanceData.Type.EXT_CADENCE );
@@ -94,7 +95,7 @@ public class PowerHandler extends BaseHandler
 					{
 						public void trigger( IPerformanceDataListener target )
 						{
-							target.handlePerformanceData( "pwr", pd2 );
+							target.handlePerformanceData( _id, pd2 );
 						}
 					}
 				);
@@ -106,7 +107,7 @@ public class PowerHandler extends BaseHandler
 					{
 						public void trigger( IPerformanceDataListener target )
 						{
-							target.handlePerformanceData( "pwr", powerData );
+							target.handlePerformanceData( _id, powerData );
 						}
 					}
 				);
@@ -116,5 +117,17 @@ public class PowerHandler extends BaseHandler
 				_init = true;
 			}
         }
+		else if( data[0] == 0x51 )
+		{
+			StringBuilder sb = new StringBuilder("pwr:");
+			sb.append( HexUtil.toHexString( data[1] ) );
+			sb.append( HexUtil.toHexString( data[2] ) );
+			sb.append( HexUtil.toHexString( data[3] ) );
+			sb.append( HexUtil.toHexString( data[4] ) );
+			sb.append( HexUtil.toHexString( data[5] ) );
+			sb.append( HexUtil.toHexString( data[6] ) );
+			sb.append( HexUtil.toHexString( data[7] ) );
+			_id = sb.toString();
+		}
     }
 }

@@ -21,6 +21,8 @@ import gnu.io.PortInUseException;
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 import nrider.io.*;
+import nrider.media.IMediaEventListener;
+import nrider.media.MediaEvent;
 import nrider.net.NetSource;
 import nrider.ride.IRide;
 import org.apache.log4j.Logger;
@@ -32,7 +34,7 @@ import java.util.*;
  * Central control for a workout.  Manages riders and trainers in a workout.
  * TODO: review/fix thread safety after sorting out how everything should work
  */
-public class WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, IControlDataListener
+public class WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, IControlDataListener, IMediaEventListener
 {
 	private final static Logger LOG = Logger.getLogger( WorkoutSession.class );
 
@@ -65,6 +67,8 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	private Map<String, RiderSession> _riderMap = new HashMap<String, RiderSession>();
 	private EventPublisher<IPerformanceDataListener> _netPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private EventPublisher<IPerformanceDataListener> _localPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
+
+	private EventPublisher<IMediaEventListener> _mediaEventPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 
 	private EventPublisher<IWorkoutListener> _workoutPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private IRide _ride;
@@ -425,6 +429,22 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	public void addWorkoutListener( IWorkoutListener listener )
 	{
 		_workoutPublisher.addListener( listener );
+	}
+
+	public void addMediaEventListner( IMediaEventListener listener )
+	{
+		_mediaEventPublisher.addListener( listener );
+	}
+
+	public void handleMediaEvent( final MediaEvent me )
+	{
+		_mediaEventPublisher.publishEvent(
+			new IEvent<IMediaEventListener>() {
+				public void trigger( IMediaEventListener target )
+				{
+					target.handleMediaEvent( me );
+				}
+			});
 	}
 
 	public void close() throws IOException

@@ -48,6 +48,17 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 
 	public void start()
 	{
+		SwingUtilities.invokeLater( new Runnable()
+		{
+			public void run()
+			{
+				init();
+			}
+		});
+	}
+
+	private void init()
+	{
 		_window = new JFrame();
 		_window.setSize(500, 600);
 
