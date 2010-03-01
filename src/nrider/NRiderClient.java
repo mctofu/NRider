@@ -341,11 +341,11 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 
 			c.gridwidth = 1;
 
-			_speed = new PerformanceStatView( 0, 30, 60, new DecimalFormat( "0.0" ) );
+			_speed = new PerformanceStatView( 10, 30, 60, new DecimalFormat( "0.0" ) );
 			c.gridy = 3;
 			addPerformanceStatView( _speed, c );
 
-			_cadence = new PerformanceStatView(  0, 150, 60, new DecimalFormat( "0" ) );
+			_cadence = new PerformanceStatView(  45, 130, 60, new DecimalFormat( "0" ) );
 			c.gridy = 4;
 			_cadence.setVisible( false );
 			addPerformanceStatView( _cadence, c );
@@ -354,12 +354,12 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener
 			c.gridy = 5;
 			addPerformanceStatView( _power, c );
 
-			_extHeartRate = new PerformanceStatView( 0, 220, 60, new DecimalFormat( "0" ) );
+			_extHeartRate = new PerformanceStatView( 50, 220, 60, new DecimalFormat( "0" ) );
 			c.gridy = 6;
 			_extHeartRate.setVisible( false );
 			addPerformanceStatView( _extHeartRate, c );
 
-			_extCadence = new PerformanceStatView( 0, 150, 60, new DecimalFormat( "0" ) );
+			_extCadence = new PerformanceStatView( 45, 130, 60, new DecimalFormat( "0" ) );
 			c.gridy = 7;
 			_extCadence.setVisible( false );
 			addPerformanceStatView( _extCadence, c );
