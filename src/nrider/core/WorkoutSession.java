@@ -307,7 +307,6 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 								target.handleRideStatusUpdate( _ride.getStatus() );
 							}
 						});
-
 				}
 			}
 		}
@@ -395,30 +394,33 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	{
 		try
 		{
-            synchronized( _riders )
-            {
-                if( _deviceMap.containsKey( identifier ) )
-                {
-                    RiderSession rs = _deviceMap.get( identifier );
-                    switch( data.getType() )
-                    {
-                        case PLUS:
-                            // TODO: more sense to just set on rider which triggers an event for the workout to adjust the load?
-                            setRiderThreshold( rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() + 5 );
-                            break;
-                        case MINUS:
-                            // TODO: more sense to just set on rider which triggers an event for the workout to adjust the load?
-                            setRiderThreshold( rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() - 5 );
-                            break;
-                        case START:
-                            startRide();
-                            break;
-                        case STOP:
-                            pauseRide();
-                            break;
-                    }
-                }
-            }
+			synchronized( _controllers )
+			{
+				synchronized( _riders )
+				{
+					if( _deviceMap.containsKey( identifier ) )
+					{
+						RiderSession rs = _deviceMap.get( identifier );
+						switch( data.getType() )
+						{
+							case PLUS:
+								// TODO: more sense to just set on rider which triggers an event for the workout to adjust the load?
+								setRiderThreshold( rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() + 5 );
+								break;
+							case MINUS:
+								// TODO: more sense to just set on rider which triggers an event for the workout to adjust the load?
+								setRiderThreshold( rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() - 5 );
+								break;
+							case START:
+								startRide();
+								break;
+							case STOP:
+								pauseRide();
+								break;
+						}
+					}
+				}
+			}
 		}
 		catch( Throwable e )
 		{
@@ -460,29 +462,35 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	public void setRiderThreshold( final String identifier, final int thresholdPower )
 	{
-        synchronized( _riders )
-        {
-            Rider rider = getRider( identifier );
-            rider.setThresholdPower( thresholdPower );
-            reapplyRiderLoad( identifier );
-            _workoutPublisher.publishEvent(
-                new IEvent<IWorkoutListener>() {
-                    public void trigger( IWorkoutListener target )
-                    {
-                        target.handleRiderThresholdAdjust( identifier, thresholdPower );
-                    }
-                });
-        }
+		synchronized( _controllers )
+		{
+			synchronized( _riders )
+			{
+				Rider rider = getRider( identifier );
+				rider.setThresholdPower( thresholdPower );
+				reapplyRiderLoad( identifier );
+				_workoutPublisher.publishEvent(
+					new IEvent<IWorkoutListener>() {
+						public void trigger( IWorkoutListener target )
+						{
+							target.handleRiderThresholdAdjust( identifier, thresholdPower );
+						}
+					});
+			}
+		}
 	}
 
 	public void setRiderHandicap( String identifier, final int handicap )
 	{
-        synchronized( _riders )
-        {
-            RiderSession rider = _riderMap.get( identifier );
-            rider.setHandicap( handicap );
-            reapplyRiderLoad( identifier );
-        }
+		synchronized( _controllers )
+		{
+			synchronized( _riders )
+			{
+				RiderSession rider = _riderMap.get( identifier );
+				rider.setHandicap( handicap );
+				reapplyRiderLoad( identifier );
+			}
+		}
 	}
 
 	private void reapplyRiderLoad( String riderId )
