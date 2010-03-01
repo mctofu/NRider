@@ -107,7 +107,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		{
 			int data;
 			StringBuilder sb = new StringBuilder();
-			while( ( data = getInput().read() ) > -1 )
+			while( ( data = read() ) > -1 )
 			{
 				if( _msgBuffer.size() == 0 )
 				{
@@ -466,8 +466,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 
 		try
 		{
-			getOutput().write( msg );
-			getOutput().flush();
+			write( msg );
 		}
 		catch( IOException e )
 		{
@@ -492,8 +491,6 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 			}
 		}
 	}
-
-
 
 	@Override
 	public void close() throws IOException

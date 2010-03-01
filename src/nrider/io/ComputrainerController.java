@@ -150,9 +150,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 		try
 		{
 			_msgBufferPos.set( 0 );
-			getOutput().write( "RacerMate".getBytes() );
-			getOutput().flush();
-
+			write( "RacerMate".getBytes() );
 		}
 		catch( IOException e )
 		{
@@ -167,7 +165,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			if( serialPortEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE )
 			{
 				int data;
-				while( ( data = getInput().read() ) > -1 )
+				while( ( data = read() ) > -1 )
 				{
 					_msgBuffer[_msgBufferPos.getAndIncrement()] = (byte) data;
 					if( _status != Status.CONNECTED && _msgBufferPos.get() == 6 ) // handshake message is different from everything else
@@ -216,7 +214,6 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 			{
 				LOG.info( getIdentifier() + " connected" );
 				sendInitMessage();
-				sendControlMessage( (int) _load );
 				_status = Status.CONNECTED;
 				_lostConnection = false;
 			}
@@ -356,7 +353,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 
 	private synchronized void sendInitMessage() throws IOException
 	{
-		getOutput().write( ERGO_INIT_COMMAND );
+		queueWrite( ERGO_INIT_COMMAND );
 		sendControlMessage( (int) _load );
 	}
 
@@ -389,6 +386,11 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 		// Bit 1 (0x01) is low bit of low byte in load (but 1 0x01)
 		msg[6] |= load&1;
 
+		queueWrite( msg );
+	}
+
+	private void queueWrite( final byte[] msg )
+	{
 		_writeExecutor.execute(
 			new Runnable()
 			{
@@ -396,8 +398,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 				{
 					try
 					{
-						getOutput().write( msg );
-						getOutput().flush();
+						write( msg );
 					}
 					catch( IOException e )
 					{
