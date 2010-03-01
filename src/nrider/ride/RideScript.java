@@ -89,6 +89,8 @@ public class RideScript implements Iterable<RideEvent>
 	{
 		_period = 0;
 		List<RideEvent> newScript = new ArrayList<RideEvent>();
+
+		RideEvent prev = null;
 		for( RideEvent re : _script )
 		{
 			if( re.getPosition() >= start && re.getPosition() < end )
@@ -98,9 +100,24 @@ public class RideScript implements Iterable<RideEvent>
 				{
 					_period = re._position;
 				}
+				if( prev != null && newScript.size() == 0 && re._position > 0 )
+				{
+					// TODO: should figure out what the actual output would have been at start
+					prev._position = 0;
+					newScript.add( prev );
+					prev = null;
+				}
 
 				newScript.add( re );
 			}
+			else
+			{
+				if( re.getPosition() < start )
+				{
+					prev = re;
+				}
+			}
+			//TODO: fix end if we cropped between two events.
 		}
 		_script = newScript;
 	}
