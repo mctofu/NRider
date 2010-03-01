@@ -57,7 +57,7 @@ public class RiderPerformanceMonitor implements IPerformanceDataListener
 					double targetWatts = WorkoutSession.instance().getTargetWatts( identifier );
 					int threshold = WorkoutSession.instance().getRider( identifier ).getThresholdPower();
 					RiderMonitor monitor = getMonitor( identifier );
-					if( monitor.getLastSpeed() > 3 && ( monitor.getLastSpeed() < 18 || ( targetWatts > ( threshold - threshold * .1 ) && monitor.getLastSpeed() < 20 ) ) )
+					if( monitor.getLastSpeed() > 3 && ( monitor.getLastSpeed() < 18 || ( actualWatts < targetWatts * .5 ) ) )
 					{
 						if( monitor.getAssisted().setAlert() )
 						{
