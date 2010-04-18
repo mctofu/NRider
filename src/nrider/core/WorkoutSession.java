@@ -65,6 +65,8 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	private List<IWorkoutController> _controllers = new ArrayList<IWorkoutController>();
 	private Map<String, RiderSession> _deviceMap = new HashMap<String, RiderSession>();
 	private Map<String, RiderSession> _riderMap = new HashMap<String, RiderSession>();
+	private HashSet<String> _unmappedIdentifiers = new HashSet<String>();
+
 	private EventPublisher<IPerformanceDataListener> _netPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private EventPublisher<IPerformanceDataListener> _localPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 
@@ -241,6 +243,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
             RiderSession session = _riderMap.get( riderId );
             session.addAssociation( identifier );
             _deviceMap.put( identifier, session );
+			_unmappedIdentifiers.remove( identifier );
         }
 	}
 
@@ -378,8 +381,21 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
                         }
                     });
             }
+			else
+			{
+				_unmappedIdentifiers.add( identifier );
+			}
         }
 	}
+
+	public String[] getUnmappedIdentifiers()
+	{
+		synchronized( _riders )
+		{
+			return _unmappedIdentifiers.toArray( new String[_unmappedIdentifiers.size()] );
+		}
+	}
+
 
 	private EventPublisher<IPerformanceDataListener> getPublisher( RiderSession session )
 	{
