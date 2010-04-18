@@ -20,7 +20,7 @@ public class AddCompuTrainer extends BaseCommand
 
 	public String run( String[] args )
 	{
-		if( args.length != 1 )
+		if( args.length < 1 || args.length > 2 )
 		{
 			return "Invalid syntax";
 		}
@@ -40,6 +40,12 @@ public class AddCompuTrainer extends BaseCommand
 		session.addWorkoutController( compuTrainer );
 		compuTrainer.addPerformanceDataListener( session );
 		compuTrainer.addControlDataListener( session );
+
+		if( args.length > 1 )
+		{
+			session.associateRider( args[1], compuTrainer.getIdentifier() );
+		}
+
 		return "Added " + compuTrainer.getIdentifier();
 	}
 }

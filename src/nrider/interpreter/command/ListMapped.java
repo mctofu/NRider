@@ -22,26 +22,29 @@ import nrider.interpreter.BaseCommand;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Map;
 
 /**
- *  List identifiers publishing stats that aren't mapped to riders
+ * list identifiers mapped to riders
  */
-public class ListUnmapped extends BaseCommand
+public class ListMapped extends BaseCommand
 {
-	public String getDescription()
+	@Override
+	public String run( String[] args ) throws Exception
 	{
-		return "List identifiers publishing stats that aren't mapped to riders";
+		StringWriter output = new StringWriter();
+		PrintWriter outputWriter = new PrintWriter( output );
+
+		for( Map.Entry<String,String> entry : WorkoutSession.instance().getMappedIdentifiers().entrySet() )
+		{
+			outputWriter.println( entry.getKey() + "\t" + entry.getValue() );
+		}
+
+		return output.toString();
 	}
 
-	public String run( String[] args )
+	public String getDescription()
 	{
-		StringWriter sw = new StringWriter();
-		PrintWriter pw = new PrintWriter( sw );
-		for( String id : WorkoutSession.instance().getUnmappedIdentifiers() )
-		{
-			pw.println( id );
-		}
-		pw.flush();
-		return sw.toString();
+		return "List identifiers mapped to riders";
 	}
 }

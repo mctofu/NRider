@@ -160,7 +160,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 	{
         synchronized( _riders )
         {
-            return Collections.unmodifiableList( _riders );
+            return new ArrayList<Rider>( _riders );
         }
 	}
 
@@ -395,6 +395,20 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 			return _unmappedIdentifiers.toArray( new String[_unmappedIdentifiers.size()] );
 		}
 	}
+
+	public Map<String,String> getMappedIdentifiers()
+	{
+		synchronized( _riders )
+		{
+			HashMap<String,String> result = new HashMap<String,String>();
+			for( Map.Entry<String, RiderSession> entry : _deviceMap.entrySet() )
+			{
+				result.put( entry.getKey(), entry.getValue().getRider().getName() );
+			}
+			return result;
+		}
+	}
+
 
 
 	private EventPublisher<IPerformanceDataListener> getPublisher( RiderSession session )
