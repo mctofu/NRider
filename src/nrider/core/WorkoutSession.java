@@ -103,7 +103,11 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 					target.handleRideLoaded( ride );
 				}
 			});
+	}
 
+	public IRide getRide()
+	{
+		return _ride;
 	}
 
 	public void addLocalRider( final Rider rider )

@@ -136,6 +136,10 @@ public class RideScript implements Iterable<RideEvent>
 			{
 				_period = newPosition;
 			}
+			if( re.getLoad().getValue() > _maxLoad )
+			{
+				_maxLoad = re.getLoad().getValue();
+			}
 			re._position = newPosition;
 			newScript.add( re );
 		}
