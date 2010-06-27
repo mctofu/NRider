@@ -69,10 +69,11 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	private EventPublisher<IPerformanceDataListener> _netPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private EventPublisher<IPerformanceDataListener> _localPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
-
 	private EventPublisher<IMediaEventListener> _mediaEventPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
-
 	private EventPublisher<IWorkoutListener> _workoutPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
+
+	private Timer _taskScheduler = new Timer();
+
 	private IRide _ride;
 	private RiderPerformanceMonitor _riderPerformanceMonitor = new RiderPerformanceMonitor();
 	private NetSource _netSource;
@@ -413,8 +414,6 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 		}
 	}
 
-
-
 	private EventPublisher<IPerformanceDataListener> getPublisher( RiderSession session )
 	{
 		if( session.getSource().equals( "local" ) )
@@ -450,6 +449,9 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 								break;
 							case STOP:
 								pauseRide();
+								break;
+							case F2:
+								tempDisconnectRider( rs.getRider().getIdentifier() );
 								break;
 						}
 					}
@@ -494,6 +496,42 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
         }
 	}
 
+	public void tempDisconnectRider( String riderId )
+	{
+		synchronized( _controllers )
+		{
+			synchronized( _riders )
+			{
+				final IWorkoutController riderController = getRiderController( riderId );
+				if( riderController != null )
+				{
+					try
+					{
+						riderController.disconnect();
+						_taskScheduler.schedule( new TimerTask() {
+							public void run()
+							{
+								try
+								{
+									riderController.connect();
+								}
+								catch( PortInUseException e )
+								{
+									LOG.error( e );
+								}
+
+							}
+						}, 20000 );
+					}
+					catch( IOException e )
+					{
+						LOG.error( "Unable to disconnect controller for rider: " + riderId, e );
+					}
+				}
+			}
+		}
+	}
+
 	public void setRiderThreshold( final String identifier, final int thresholdPower )
 	{
 		synchronized( _controllers )
@@ -533,18 +571,30 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
         {
             synchronized( _riders )
             {
-                for( IWorkoutController controller : _controllers )
-                {
-                    RiderSession rider = _deviceMap.get( controller.getIdentifier() );
-                    if( rider != null && rider.getRider().getIdentifier().equals( riderId ) )
-                    {
-                        controller.setLoad( rider.getLoadForWorkout() );
-                        break;
-                    }
-                }
-            }            
+				IWorkoutController riderController = getRiderController( riderId );
+				if( riderController != null )
+				{
+					RiderSession rider = _riderMap.get( riderId );
+					riderController.setLoad( rider.getLoadForWorkout() );
+				}
+            }
         }
 	}
+
+	private IWorkoutController getRiderController( String riderId )
+	{
+		// need sync of controllers & riders before calling
+		for( IWorkoutController controller : _controllers )
+		{
+			RiderSession rider = _deviceMap.get( controller.getIdentifier() );
+			if( rider != null && rider.getRider().getIdentifier().equals( riderId ) )
+			{
+				return controller;
+			}
+		}
+		return null;
+	}
+
 
 	public void setNetSource( NetSource netSource )
 	{
