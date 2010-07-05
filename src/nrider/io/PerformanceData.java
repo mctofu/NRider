@@ -17,12 +17,10 @@
  */
 package nrider.io;
 
+import java.util.Date;
+
 /**
- * Created by IntelliJ IDEA.
- * User: David
- * Date: Oct 31, 2009
- * Time: 7:11:20 PM
- * To change this template use File | Settings | File Templates.
+ * point in time sample of rider performance measuremennts (speed, power, hr, etc)
  */
 public class PerformanceData
 {
@@ -30,15 +28,24 @@ public class PerformanceData
 
 	private Type _type;
 	private float _value;
+    private long _timeStamp;
 
 	public PerformanceData()
 	{
+        _timeStamp = System.currentTimeMillis();
 	}
 
-	public PerformanceData( Type type, float value )
+    public PerformanceData( Type type, float value ) {
+        this();
+        _type = type;
+        _value = value;
+    }
+
+    public PerformanceData( Type type, float value, long timeStamp )
 	{
 		_type = type;
 		_value = value;
+        _timeStamp = timeStamp;
 	}
 
 	public Type getType()
@@ -60,4 +67,12 @@ public class PerformanceData
 	{
 		_value = value;
 	}
+
+    public long getTimeStamp() {
+        return _timeStamp;
+    }
+
+    public void setTimeStamp( long timeStamp ) {
+        _timeStamp = timeStamp;
+    }
 }

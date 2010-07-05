@@ -74,8 +74,8 @@ public class PowerHandler extends BaseHandler
 			}
 
 			double force = t / ( r * 32 );
-			double cadence = r * 122880.0 / p;
-			double watts = cadence * force * 2 * Math.PI / 60;
+			final double cadence = r * 122880.0 / p;
+			final double watts = cadence * force * 2 * Math.PI / 60;
 
 			StringBuilder pDebug = new StringBuilder();
 			pDebug.append( "seq: " + seqRRD );
@@ -88,29 +88,32 @@ public class PowerHandler extends BaseHandler
 
 			if( _init && _id != null )
 			{
-				final PerformanceData pd2 = new PerformanceData();
-				pd2.setType( PerformanceData.Type.EXT_CADENCE );
-				pd2.setValue( (float) cadence );
-				publishEvent( new IEvent<IPerformanceDataListener>()
-					{
-						public void trigger( IPerformanceDataListener target )
+				if( seqRRD != getLastSeq() )
+				{
+					setLastSeq( seqRRD );
+					publishEvent( new IEvent<IPerformanceDataListener>()
 						{
-							target.handlePerformanceData( _id, pd2 );
+							public void trigger( IPerformanceDataListener target )
+							{
+								target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_CADENCE, (float) cadence ) );
+							}
 						}
-					}
-				);
+					);
 
-				final PerformanceData powerData = new PerformanceData();
-				powerData.setType( PerformanceData.Type.EXT_POWER );
-				powerData.setValue( (float) watts );
-				publishEvent( new IEvent<IPerformanceDataListener>()
-					{
-						public void trigger( IPerformanceDataListener target )
+					publishEvent( new IEvent<IPerformanceDataListener>()
 						{
-							target.handlePerformanceData( _id, powerData );
+							public void trigger( IPerformanceDataListener target )
+							{
+								target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_POWER, (float) watts ) );
+							}
 						}
-					}
-				);
+					);
+				}
+				else if( System.currentTimeMillis() - getLastMessageTime() > 1000 )
+				{
+					// if we get repeats it probably means pedaling has stopped
+					sendZero();
+				}
 			}
 			else
 			{
@@ -130,4 +133,25 @@ public class PowerHandler extends BaseHandler
 			_id = sb.toString();
 		}
     }
+
+	protected void sendZero()
+	{
+		publishEvent( new IEvent<IPerformanceDataListener>()
+			{
+				public void trigger( IPerformanceDataListener target )
+				{
+					target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_CADENCE, 0 ) );
+				}
+			}
+		);
+		publishEvent( new IEvent<IPerformanceDataListener>()
+			{
+				public void trigger( IPerformanceDataListener target )
+				{
+					target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_POWER, 0 ) );
+				}
+			}
+		);
+	}
+
 }

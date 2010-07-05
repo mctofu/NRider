@@ -19,6 +19,7 @@ public class HrmHandler extends BaseHandler
     private final static Logger LOG = Logger.getLogger( HrmHandler.class );
 	private String _id;
 
+
     public HrmHandler( EventPublisher<IPerformanceDataListener> publisher )
     {
         super( publisher );
@@ -33,8 +34,9 @@ public class HrmHandler extends BaseHandler
         sb.append( HexUtil.toHexString( data[2] ) );
         sb.append( HexUtil.toHexString( data[3] ) );
 		final String id = sb.toString();
+		int seq = (int) data[6] & 0xFF;
         StringBuilder debug = new StringBuilder();
-        debug.append( "SEQ: " + ( (int) data[6] & 0xFF ) );
+        debug.append( "SEQ: " + ( seq ) );
         debug.append( " HR: " + ( (int) data[7] & 0xFF ) );
         debug.append( " RRD: " + ( ( (int) data[4] & 0xFF ) + ( (int) data[5] & 0xFF ) * 256 ) );
         debug.append( " ID: " + id );
@@ -46,13 +48,16 @@ public class HrmHandler extends BaseHandler
 
 		if( id.equals( _id ) )
 		{
-			publishEvent( new IEvent<IPerformanceDataListener>()
-				{
-					public void trigger( IPerformanceDataListener target )
+			if( seq != getLastSeq() )
+			{
+				publishEvent( new IEvent<IPerformanceDataListener>()
 					{
-						target.handlePerformanceData( id, pd );
-					}
-				});
+						public void trigger( IPerformanceDataListener target )
+						{
+							target.handlePerformanceData( id, pd );
+						}
+					});
+			}
 		}
 		else
 		{
@@ -63,4 +68,16 @@ public class HrmHandler extends BaseHandler
 			_id = id;
 		}
     }
+
+	protected void sendZero()
+	{
+		publishEvent( new IEvent<IPerformanceDataListener>()
+			{
+				public void trigger( IPerformanceDataListener target )
+				{
+					target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.HEART_RATE, 0 ) );
+				}
+			});
+	}
+
 }

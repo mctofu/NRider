@@ -20,6 +20,7 @@ package nrider.io.ant;
 import gnu.io.*;
 import nrider.event.EventPublisher;
 import nrider.io.*;
+import nrider.monitor.MonitorTask;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -87,7 +88,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 	private Semaphore _responseWaitSemaphore = new Semaphore( 1 );
 	private AtomicInteger _expectedMsgId = new AtomicInteger();
 	private HashMap<Integer,DeviceInfo> _channelDevices = new HashMap<Integer, DeviceInfo>();
-    private IMessageHandler[] _channelHandlers = new IMessageHandler[20];
+    private BaseHandler[] _channelHandlers = new BaseHandler[20];
 	private HashMap<Device,Integer> _activeSearches = new HashMap<Device,Integer>( );
 	private Queue<Integer> _availableChannels = new LinkedList<Integer>( );
 	private int _maxChannelId = -1;
@@ -95,6 +96,13 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 	private EventPublisher<IPerformanceDataListener> _eventPublisher = EventPublisher.directPublisher();
 
 	private Executor _msgHandlerExecutor = Executors.newSingleThreadExecutor();
+	private Timer _monitor = new Timer();
+	private MonitorTask _channelMonitor = new MonitorTask();
+
+	public AntReceiver()
+	{
+		_monitor.scheduleAtFixedRate( _channelMonitor, 2000, 2000 );
+	}
 
 	public String getIdentifier()
 	{
@@ -212,12 +220,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 								clearSearch( removeDevice );
 							}
 
-							// cleanup if a device was previously found
-							_channelDevices.remove( antData.getChannelId() );
-							_channelHandlers[antData.getChannelId()] = null;
-
-							// this channel id is available for use again.
-							_availableChannels.add( antData.getChannelId() );
+							clearChannel( antData );
 
 							_msgHandlerExecutor.execute( new Runnable() {
 								public void run()
@@ -299,6 +302,11 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 						break;
 				}
 
+				if( _channelHandlers[antData.getChannelId()] != null )
+				{
+					_channelMonitor.addMonitorable( _channelHandlers[antData.getChannelId()] );
+				}
+
 				clearSearch( deviceInfo.getDevice() );
 			}
 
@@ -315,6 +323,20 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		return false;
 	}
 
+	private void clearChannel(AntData antData)
+	{
+		// cleanup if a device was previously found
+		_channelDevices.remove( antData.getChannelId() );
+		if( _channelHandlers[antData.getChannelId()] != null )
+		{
+			_channelMonitor.removeMonitorable( _channelHandlers[antData.getChannelId()] );
+		}
+
+		_channelHandlers[antData.getChannelId()] = null;
+
+		// this channel id is available for use again.
+		_availableChannels.add( antData.getChannelId() );
+	}
 
 
 	@Override

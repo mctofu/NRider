@@ -20,6 +20,8 @@ package nrider.io;
 import gnu.io.*;
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
+import nrider.monitor.IMonitorable;
+import nrider.monitor.MonitorTask;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -32,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Code to communicate with a CompuTrainer
  * Most of this is from Mark Liversedge's CompCs For Mac code.
  */
-public class ComputrainerController extends SerialDevice implements IPerformanceDataSource, IControlDataSource, IWorkoutController
+public class ComputrainerController extends SerialDevice implements IPerformanceDataSource, IControlDataSource, IWorkoutController, IMonitorable
 {
 	private final static Logger LOG = Logger.getLogger( ComputrainerController.class );
 	public enum Status { CONNECTED, CONNECTING, DISCONNECTED }
@@ -242,10 +244,10 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	private void startMonitor()
 	{
 		_lastReadTime = System.currentTimeMillis();
-		_monitorTask.addCompuTrainer( this );
+		_monitorTask.addMonitorable( this );
 	}
 
-	protected void checkTimeout()
+	public void monitorCheck()
 	{
 		if( _status == Status.CONNECTED )
 		{
@@ -419,7 +421,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	{
 		if( _status != Status.DISCONNECTED )
 		{
-			_monitorTask.removeCompuTrainer( this );
+			_monitorTask.removeMonitorable( this );
 			super.close();
             _status = Status.DISCONNECTED;
 		}
@@ -442,37 +444,4 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 		_performanceDataPublisher.addPerformanceDataListener( listener );
 	}
 
-	static class MonitorTask extends TimerTask
-	{
-		private ArrayList<ComputrainerController> _targets = new ArrayList<ComputrainerController>();
-
-		@Override
-		public void run()
-		{
-			synchronized( _targets )
-			{
-				for( ComputrainerController cc : _targets )
-				{
-					cc.checkTimeout();
-				}
-			}
-		}
-
-		public void addCompuTrainer( ComputrainerController cc )
-		{
-			synchronized( _targets )
-			{
-				_targets.add( cc );
-			}
-		}
-
-		public void removeCompuTrainer( ComputrainerController  cc )
-		{
-			synchronized( _targets )
-			{
-				_targets.remove( cc );
-			}
-		}
-	}
 }
-
