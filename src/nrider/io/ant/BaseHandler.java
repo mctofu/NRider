@@ -25,6 +25,16 @@ public abstract class BaseHandler implements IMessageHandler, IMonitorable
         _eventPublisher.publishEvent( event );
     }
 
+	protected boolean isReceiving()
+	{
+		return _receiving;
+	}
+
+	protected void setReceiving( boolean receiving )
+	{
+		_receiving = receiving;
+	}
+
 	protected long getLastMessageTime()
 	{
 		return _lastMessageTime;

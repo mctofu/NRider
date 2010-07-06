@@ -66,6 +66,7 @@ public class HrmHandler extends BaseHandler
 				LOG.warn( "Inconsistent id on channel " + antData.getChannelId() + " " + _id + "/" + id );
 			}
 			_id = id;
+			setReceiving( true );
 		}
     }
 

@@ -70,6 +70,11 @@ public class PowerHandler extends BaseHandler
 			if( r == 0 )
 			{
 				LOG.debug( "dupe" );
+				if( System.currentTimeMillis() - getLastMessageTime() > 1000 )
+				{
+					// if we get repeats it probably means pedaling has stopped
+					sendZero();
+				}
 				return;
 			}
 
@@ -88,36 +93,29 @@ public class PowerHandler extends BaseHandler
 
 			if( _init && _id != null )
 			{
-				if( seqRRD != getLastSeq() )
-				{
-					setLastSeq( seqRRD );
-					publishEvent( new IEvent<IPerformanceDataListener>()
+				setLastSeq( seqRRD );
+				publishEvent( new IEvent<IPerformanceDataListener>()
+					{
+						public void trigger( IPerformanceDataListener target )
 						{
-							public void trigger( IPerformanceDataListener target )
-							{
-								target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_CADENCE, (float) cadence ) );
-							}
+							target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_CADENCE, (float) cadence ) );
 						}
-					);
+					}
+				);
 
-					publishEvent( new IEvent<IPerformanceDataListener>()
+				publishEvent( new IEvent<IPerformanceDataListener>()
+					{
+						public void trigger( IPerformanceDataListener target )
 						{
-							public void trigger( IPerformanceDataListener target )
-							{
-								target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_POWER, (float) watts ) );
-							}
+							target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_POWER, (float) watts ) );
 						}
-					);
-				}
-				else if( System.currentTimeMillis() - getLastMessageTime() > 1000 )
-				{
-					// if we get repeats it probably means pedaling has stopped
-					sendZero();
-				}
+					}
+				);
 			}
 			else
 			{
 				_init = true;
+				setReceiving( true );
 			}
         }
 		else if( data[0] == 0x51 )

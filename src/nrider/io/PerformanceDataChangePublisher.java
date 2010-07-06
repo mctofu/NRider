@@ -21,6 +21,7 @@ import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by IntelliJ IDEA.
@@ -33,13 +34,10 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 {
 	private String _identifier;
 	private EventPublisher<IPerformanceDataListener> _performancePublisher = EventPublisher.directPublisher();
-	private float _power;
-	private float _speed;
-	private float _cadence;
-	private float _heartRate;
-	private float _extHeartRate;
 	private long _lastSpeedUpdateTime;
-	private float _calibration;
+
+	private HashMap<PerformanceData.Type,Float> _lastValue = new HashMap<PerformanceData.Type, Float>( );
+	private HashMap<PerformanceData.Type,Long> _lastSent = new HashMap<PerformanceData.Type, Long>( );
 
 	public PerformanceDataChangePublisher( String identifier )
 	{
@@ -63,11 +61,7 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 
 	public void setPower( float power )
 	{
-		if( power != _power )
-		{
-			SendUpdate( PerformanceData.Type.POWER, power );
-		}
-		_power = power;
+		ConsiderUpdate( PerformanceData.Type.POWER, power );
 	}
 
 	public void setSpeed( float speed )
@@ -75,56 +69,60 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 		long time = System.currentTimeMillis();
 		float distance = speed / ( ( time - _lastSpeedUpdateTime ) / 1000 );
 		_lastSpeedUpdateTime = time;
-		SendUpdate( PerformanceData.Type.DISTANCE, distance );
-		if( speed != _speed )
-		{
-			SendUpdate( PerformanceData.Type.SPEED, speed );
-		}
-
-		_speed = speed;
+		SendUpdate( PerformanceData.Type.DISTANCE, distance, time );
+		ConsiderUpdate( PerformanceData.Type.SPEED, speed );
 	}
+
 
 	public void setCadence( float cadence )
 	{
-		if( cadence != _cadence )
-		{
-			SendUpdate( PerformanceData.Type.CADENCE, cadence );
-		}
-
-		_cadence = cadence;
+		ConsiderUpdate( PerformanceData.Type.CADENCE, cadence );
 	}
 
 	public void setHeartRate( float heartRate )
 	{
-		if( heartRate != _heartRate )
-		{
-			SendUpdate( PerformanceData.Type.HEART_RATE, heartRate );
-		}
+		ConsiderUpdate( PerformanceData.Type.HEART_RATE, heartRate );
 
-		_heartRate = heartRate;
 	}
 
 	public void setExtHeartRate( float heartRate )
 	{
-		if( heartRate != _extHeartRate )
-		{
-			SendUpdate( PerformanceData.Type.EXT_HEART_RATE, heartRate );
-		}
-
-		_extHeartRate = heartRate;
+		ConsiderUpdate( PerformanceData.Type.EXT_HEART_RATE, heartRate );	
 	}
 
 	public void setCalibration( float calibration )
 	{
-		if( calibration != _calibration )
-		{
-			SendUpdate( PerformanceData.Type.CALIBRATION, calibration );
-		}
-		_calibration = calibration;
+		ConsiderUpdate( PerformanceData.Type.CALIBRATION, calibration, 60000 );
 	}
 
-	private void SendUpdate( PerformanceData.Type type, float value )
+	private void ConsiderUpdate( PerformanceData.Type type, float value )
 	{
+		ConsiderUpdate( type, value, 1000 );
+	}
+	
+	private void ConsiderUpdate( PerformanceData.Type type, float value, long threshold )
+	{
+		Float lastValue = _lastValue.get( type );
+
+		long now = System.currentTimeMillis();
+
+		if( lastValue != null )
+		{
+			if( lastValue != value || ( now - _lastSent.get( type ) > threshold ) )
+			{
+				SendUpdate( type, value, now );
+			}
+		}
+		else
+		{
+			SendUpdate( type, value, now );
+		}
+	}
+
+	private void SendUpdate( PerformanceData.Type type, float value, long time )
+	{
+		_lastValue.put( type, value );
+		_lastSent.put( type, time );
 		final PerformanceData data = new PerformanceData();
 		data.setType( type );
 		data.setValue( value );
