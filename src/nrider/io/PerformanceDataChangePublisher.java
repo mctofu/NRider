@@ -82,7 +82,6 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 	public void setHeartRate( float heartRate )
 	{
 		ConsiderUpdate( PerformanceData.Type.HEART_RATE, heartRate );
-
 	}
 
 	public void setExtHeartRate( float heartRate )
@@ -113,7 +112,7 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource
 				SendUpdate( type, value, now );
 			}
 		}
-		else
+		else if( value != 0 )
 		{
 			SendUpdate( type, value, now );
 		}

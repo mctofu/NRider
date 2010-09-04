@@ -121,9 +121,9 @@ public class PowerHandler extends BaseHandler
 		else if( data[0] == 0x51 )
 		{
 			StringBuilder sb = new StringBuilder("pwr:");
-			sb.append( HexUtil.toHexString( data[1] ) );
-			sb.append( HexUtil.toHexString( data[2] ) );
-			sb.append( HexUtil.toHexString( data[3] ) );
+//			sb.append( HexUtil.toHexString( data[1] ) );
+//			sb.append( HexUtil.toHexString( data[2] ) );
+//			sb.append( HexUtil.toHexString( data[3] ) );
 			sb.append( HexUtil.toHexString( data[4] ) );
 			sb.append( HexUtil.toHexString( data[5] ) );
 			sb.append( HexUtil.toHexString( data[6] ) );

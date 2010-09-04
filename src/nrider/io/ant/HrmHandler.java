@@ -20,53 +20,47 @@ public class HrmHandler extends BaseHandler
 	private String _id;
 
 
-    public HrmHandler( EventPublisher<IPerformanceDataListener> publisher )
+    public HrmHandler( EventPublisher<IPerformanceDataListener> publisher, AntReceiver.DeviceInfo deviceInfo )
     {
         super( publisher );
+		_id = "hrm:" + deviceInfo.getDeviceNumber();
     }
 
     public void handleMessage( AntData antData )
     {
         byte[] data = antData.getData();
-        StringBuilder sb = new StringBuilder( "hrm:" );
-        sb.append( HexUtil.toHexString( data[0] ) );
-        sb.append( HexUtil.toHexString( data[1] ) );
-        sb.append( HexUtil.toHexString( data[2] ) );
-        sb.append( HexUtil.toHexString( data[3] ) );
-		final String id = sb.toString();
+//        StringBuilder sb = new StringBuilder( "hrm:" );
+//        sb.append( HexUtil.toHexString( data[0] ) );
+//        sb.append( HexUtil.toHexString( data[1] ) );
+//        sb.append( HexUtil.toHexString( data[2] ) );
+//        sb.append( HexUtil.toHexString( data[3] ) );
+//		final String id = sb.toString();
 		int seq = (int) data[6] & 0xFF;
         StringBuilder debug = new StringBuilder();
         debug.append( "SEQ: " + ( seq ) );
         debug.append( " HR: " + ( (int) data[7] & 0xFF ) );
         debug.append( " RRD: " + ( ( (int) data[4] & 0xFF ) + ( (int) data[5] & 0xFF ) * 256 ) );
-        debug.append( " ID: " + id );
+        debug.append( " ID: " + _id );
 
         LOG.debug(debug);
         final PerformanceData pd = new PerformanceData();
         pd.setType( PerformanceData.Type.EXT_HEART_RATE );
         pd.setValue( (int) data[7] & 0xFF );
 
-		if( id.equals( _id ) )
+		if( !isReceiving() )
 		{
-			if( seq != getLastSeq() )
-			{
-				publishEvent( new IEvent<IPerformanceDataListener>()
-					{
-						public void trigger( IPerformanceDataListener target )
-						{
-							target.handlePerformanceData( id, pd );
-						}
-					});
-			}
+			setReceiving( true );	
 		}
-		else
+
+		if( seq != getLastSeq() )
 		{
-			if( _id != null )
-			{
-				LOG.warn( "Inconsistent id on channel " + antData.getChannelId() + " " + _id + "/" + id );
-			}
-			_id = id;
-			setReceiving( true );
+			publishEvent( new IEvent<IPerformanceDataListener>()
+				{
+					public void trigger( IPerformanceDataListener target )
+					{
+						target.handlePerformanceData( _id, pd );
+					}
+				});
 		}
     }
 
@@ -76,7 +70,7 @@ public class HrmHandler extends BaseHandler
 			{
 				public void trigger( IPerformanceDataListener target )
 				{
-					target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.HEART_RATE, 0 ) );
+					target.handlePerformanceData( _id, new PerformanceData( PerformanceData.Type.EXT_HEART_RATE, 0 ) );
 				}
 			});
 	}

@@ -267,7 +267,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 						LOG.debug("Channel id not set");
 						break;
 					case 25:
-						LOG.debug("Close all channels");
+						LOG.debug("close all channels");
 						break;
 					case 40:
 						LOG.debug("Invalid message");
@@ -294,7 +294,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 				{
 					case ANT_PLUS_SPORT_HRM_TYPE:
 						LOG.debug( "HRM" );
-						_channelHandlers[antData.getChannelId()] = new HrmHandler( _eventPublisher );
+						_channelHandlers[antData.getChannelId()] = new HrmHandler( _eventPublisher, deviceInfo );
 						break;
 					case ANT_PLUS_SPORT_PM_TYPE:
 						LOG.debug( "Power Meter" );
@@ -525,12 +525,11 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		_eventPublisher.addListener( listener );
 	}
 
-	class DeviceInfo
+	public class DeviceInfo
 	{
 		private int _deviceNumber;
 		private int _deviceType;
 		private Device _device;
-		private String _serialNumber;
 
 		DeviceInfo( int deviceNumber, int deviceType )
 		{
@@ -559,16 +558,5 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		{
 			return _device;
 		}
-
-		public String getSerialNumber()
-		{
-			return _serialNumber;
-		}
-
-		public void setSerialNumber( String serialNumber )
-		{
-			_serialNumber = serialNumber;
-		}
 	}
-
 }

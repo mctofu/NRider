@@ -61,7 +61,7 @@ public abstract class BaseHandler implements IMessageHandler, IMonitorable
 	{
 		if( _receiving )
 		{
-			if( System.currentTimeMillis() - _lastMessageTime > 1500 )
+			if( System.currentTimeMillis() - _lastMessageTime > 3000 )
 			{
 				sendZero();
 			}
