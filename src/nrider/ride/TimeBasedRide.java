@@ -82,7 +82,8 @@ public class TimeBasedRide implements IRide
 
 	public void stop()
 	{
-
+		pause();
+		_status = Status.STOPPED;
 	}
 
 	public Status getStatus()

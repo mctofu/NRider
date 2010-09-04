@@ -34,7 +34,8 @@ import java.util.*;
  * Central control for a workout.  Manages riders and trainers in a workout.
  * TODO: review/fix thread safety after sorting out how everything should work
  */
-public class WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, IControlDataListener, IMediaEventListener
+public class
+		WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, IControlDataListener, IMediaEventListener
 {
 	private final static Logger LOG = Logger.getLogger( WorkoutSession.class );
 
@@ -69,6 +70,7 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 
 	private EventPublisher<IPerformanceDataListener> _netPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private EventPublisher<IPerformanceDataListener> _localPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
+	private EventPublisher<IPerformanceDataListener> _unmappedPerformancePublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private EventPublisher<IMediaEventListener> _mediaEventPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 	private EventPublisher<IWorkoutListener> _workoutPublisher = EventPublisher.singleThreadPublisher( WorkoutSession.class.getName() );
 
@@ -326,9 +328,17 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 		{
 			synchronized( _ride )
 			{
-				if( _ride != null & _ride.getStatus() == IRide.Status.RUNNING )
+				if( _ride != null && ( _ride.getStatus() == IRide.Status.RUNNING || _ride.getStatus() == IRide.Status.PAUSED ) )
 				{
-					_ride.pause();
+					if( _ride.getStatus() == IRide.Status.PAUSED )
+					{
+						_ride.stop();	
+					}
+					else
+					{
+						_ride.pause();
+					}
+
 					_riderPerformanceMonitor.deactivate();
 					_workoutPublisher.publishEvent(
 						new IEvent<IWorkoutListener>() {
@@ -366,12 +376,22 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 		_localPerformancePublisher.addListener( listener );
 	}
 
+	public void addUnmappedPerformanceDataListener( IPerformanceDataListener listener )
+	{
+		_unmappedPerformancePublisher.addListener( listener );
+	}
+
+	public void removeUnmappedPerformanceDataListener( IPerformanceDataListener listener )
+	{
+		_unmappedPerformancePublisher.removeListener( listener );
+	}
+
 	/**
 	 * handle raw perf data from a controller and publish rider perf data
 	 * @param identifier
 	 * @param data
 	 */
-	public void handlePerformanceData( String identifier, final PerformanceData data )
+	public void handlePerformanceData( final String identifier, final PerformanceData data )
 	{
         synchronized( _riders )
         {
@@ -389,6 +409,14 @@ public class WorkoutSession implements IPerformanceDataListener, IPerformanceDat
 			else
 			{
 				_unmappedIdentifiers.add( identifier );
+				_unmappedPerformancePublisher.publishEvent(
+					new IEvent<IPerformanceDataListener>() {
+						public void trigger( IPerformanceDataListener target )
+						{
+							target.handlePerformanceData( identifier, data );
+						}
+					});
+
 			}
         }
 	}
