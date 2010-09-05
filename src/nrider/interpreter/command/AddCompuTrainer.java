@@ -26,6 +26,10 @@ public class AddCompuTrainer extends BaseCommand
 		}
 		ComputrainerController compuTrainer = new ComputrainerController();
 		compuTrainer.setCommPortName( args[0] );
+		if( args.length > 1 )
+		{
+			compuTrainer.setIdentifier( args[1] );
+		}
 		try
 		{
 			compuTrainer.connect();
@@ -41,9 +45,9 @@ public class AddCompuTrainer extends BaseCommand
 		compuTrainer.addPerformanceDataListener( session );
 		compuTrainer.addControlDataListener( session );
 
-		if( args.length > 1 )
+		if( args.length > 2 )
 		{
-			session.associateRider( args[1], compuTrainer.getIdentifier() );
+			session.associateRider( args[2], compuTrainer.getIdentifier() );
 		}
 
 		return "Added " + compuTrainer.getIdentifier();

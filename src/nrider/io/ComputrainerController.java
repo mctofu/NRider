@@ -66,6 +66,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	private ExecutorService _writeExecutor = Executors.newSingleThreadExecutor();
 	private static Timer _monitor = new Timer();
 	private static MonitorTask _monitorTask = new MonitorTask();
+	private String _identifier;
 	private volatile long _lastReadTime;
 	private volatile Status _status = Status.DISCONNECTED;
     private boolean _lostConnection;
@@ -82,11 +83,20 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 
 	public String getIdentifier()
 	{
+		if( _identifier != null )
+		{
+			return "CompuTrainer:" + _identifier;
+		}
 		if( getCommPortId() != null )
 		{
 			return "CompuTrainer:" + getCommPortId().getName();
 		}
 		return "CompuTrainer:Unassigned";
+	}
+
+	public void setIdentifier( String id )
+	{
+		_identifier = id;
 	}
 
 	public TrainerMode getMode()
