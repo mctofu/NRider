@@ -26,8 +26,15 @@ import java.util.List;
  */
 public interface IRiderDb
 {
-	public List<String> GetRiderIds();
-	public Rider GetRider( String riderId );
-	public List<String> GetGroupIds();
-	public List<String> GetGroupRiderIds( String groupId );
+	public List<String> getRiderIds();
+	public Rider getRider( String riderId );
+	public List<String> getGroupIds();
+	public List<String> getGroupRiderIds( String groupId );
+	public void addRider( Rider rider );
+	public void updateRider( Rider rider );
+	public void removeRider( String riderId );
+	public void createGroup( String groupId );
+	public void removeGroup( String groupId );
+	public void addRiderToGroup( String groupId, String riderId );
+	public void removeRiderFromGroup( String groupId, String riderId );
 }

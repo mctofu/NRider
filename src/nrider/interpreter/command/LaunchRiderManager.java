@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2009 David McIntosh (david.mcintosh@yahoo.com)
- *
+ *  
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -15,58 +15,31 @@
  * with this program; if not, write to the Free Software Foundation, Inc., 51
  * Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-package nrider.core;
+package nrider.interpreter.command;
 
-import java.util.ArrayList;
-import java.util.List;
+import nrider.core.WorkoutSession;
+import nrider.interpreter.BaseCommand;
+import nrider.ui.RiderManager;
 
 /**
- * Created by IntelliJ IDEA.
- * User: David
- * Date: Nov 1, 2009
- * Time: 9:16:01 AM
- * To change this template use File | Settings | File Templates.
+
  */
-public class Rider
+public class LaunchRiderManager extends BaseCommand
 {
-	private String _name;
-	private int _thresholdPower;
-	private List<String> _devices = new ArrayList<String>();
-
-	public String getIdentifier()
+	@Override
+	public String run( String[] args ) throws Exception
 	{
-		return getName();
+		RiderManager rm = new RiderManager();
+
+//		WorkoutSession.instance().addUnmappedPerformanceDataListener( rm );
+
+		rm.start();
+
+		return null;
 	}
 
-	public String getName()
+	public String getDescription()
 	{
-		return _name;
+		return "Open rider manager window";
 	}
-
-	public void setName( String name )
-	{
-		_name = name;
-	}
-
-	public int getThresholdPower()
-	{
-		return _thresholdPower;
-	}
-
-	public void setThresholdPower( int thresholdPower )
-	{
-		_thresholdPower = thresholdPower;
-	}
-
-	public List<String> getDevices()
-	{
-		return _devices;
-	}
-
-	public void addDevice( String deviceId )
-	{
-		_devices.add( deviceId );
-	}
-
-
 }
