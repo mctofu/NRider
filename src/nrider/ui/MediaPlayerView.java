@@ -206,15 +206,18 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 				_vrc.getData( buffer );
 				IntBuffer intBuffer = (IntBuffer) buffer.getBuffer();
 
-				BufferedImage image = (BufferedImage) createImage( buffer.getWidth(), buffer.getHeight() );
+                if( intBuffer != null )
+                {
+                    BufferedImage image = (BufferedImage) createImage( buffer.getWidth(), buffer.getHeight() );
 
-				image.setRGB( 0, 0, buffer.getWidth(), buffer.getHeight(), intBuffer.array(), 0, buffer.getWidth() );
+                    image.setRGB( 0, 0, buffer.getWidth(), buffer.getHeight(), intBuffer.array(), 0, buffer.getWidth() );
 
-				AffineTransform transform = new AffineTransform();
-				transform.scale( 1, -1 );
-				transform.translate( 0, -buffer.getHeight() );
+                    AffineTransform transform = new AffineTransform();
+                    transform.scale( 1, -1 );
+                    transform.translate( 0, -buffer.getHeight() );
 
-				graphics.drawImage( image, transform, this );
+                    graphics.drawImage( image, transform, this );
+                }
 
 				_vrc.releaseData( buffer );
 
