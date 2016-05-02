@@ -17,15 +17,15 @@
  */
 package nrider.io;
 
-import gnu.io.*;
+import jssc.SerialPort;
+import jssc.SerialPortEventListener;
+import jssc.SerialPortException;
+import jssc.SerialPortList;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.TooManyListenersException;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -34,16 +34,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class SerialDevice implements SerialPortEventListener
 {
 	private final static Logger LOG = Logger.getLogger( ComputrainerController.class );
-	private CommPortIdentifier _commPortId;
+	private String _commPortId;
 	private SerialPort _serialPort;
-	private OutputStream _output;
-	private InputStream _input;
-	private static ArrayList<CommPortIdentifier> _commPortIdentifiers = new ArrayList<CommPortIdentifier>();
+	private static ArrayList<String> _commPortIdentifiers = new ArrayList<>();
 
 	private Object _lock = new Object();
 	private AtomicBoolean _open = new AtomicBoolean();
 
-	public CommPortIdentifier getCommPortId()
+	public String getCommPortId()
 	{
 		return _commPortId;
 	}
@@ -56,7 +54,11 @@ public abstract class SerialDevice implements SerialPortEventListener
 			{
 				synchronized( _lock )
 				{
-					return _input.read();
+					try {
+						return _serialPort.readBytes(1)[0];
+					} catch (SerialPortException e) {
+						throw new IOException(e);
+					}
 				}
 			}
 			return -1;
@@ -71,29 +73,23 @@ public abstract class SerialDevice implements SerialPortEventListener
 			{
 				synchronized( _lock )
 				{
-					_output.write( bytes );
-					_output.flush();
+					try {
+						_serialPort.writeBytes(bytes);
+					} catch (SerialPortException e) {
+						throw new IOException(e);
+					}
 				}
 			}
 		}
 	}
 	
-	public static ArrayList<CommPortIdentifier> getPortIdentifiers()
+	public static ArrayList<String> getPortIdentifiers()
 	{
-		// errors happen if we call getPortIdentifiers more than once so cache the results.  maybe upgrading the rxtx library would help.
 		synchronized( _commPortIdentifiers )
 		{
 			if( _commPortIdentifiers.size() == 0 )
 			{
-				Enumeration commPortIds = CommPortIdentifier.getPortIdentifiers();
-				while( commPortIds.hasMoreElements() )
-				{
-					CommPortIdentifier commPortId = (CommPortIdentifier) commPortIds.nextElement();
-					if( commPortId.getPortType() == CommPortIdentifier.PORT_SERIAL )
-					{
-						_commPortIdentifiers.add( commPortId );
-					}
-				}
+				_commPortIdentifiers.addAll( Arrays.asList( SerialPortList.getPortNames() ) );
 			}
 		}
 		return _commPortIdentifiers;
@@ -102,10 +98,9 @@ public abstract class SerialDevice implements SerialPortEventListener
 
 	public void setCommPortName( String name )
 	{
-		ArrayList<CommPortIdentifier> commPortIds = getPortIdentifiers();
-		for( CommPortIdentifier commPortId : commPortIds )
+		for( String commPortId : getPortIdentifiers() )
 		{
-			if( commPortId.getPortType() == CommPortIdentifier.PORT_SERIAL && commPortId.getName().equals( name ) )
+			if( commPortId.equals( name ) )
 			{
 				_commPortId = commPortId;
 				break;
@@ -117,34 +112,28 @@ public abstract class SerialDevice implements SerialPortEventListener
 		}
 	}
 
-	public void connect() throws PortInUseException
+	public void connect()
 	{
 		synchronized( _open )
 		{
 			synchronized( _lock )
 			{
-				_serialPort = (SerialPort) _commPortId.open( "nrider.NRider", 2000 );
+				_serialPort = new SerialPort( _commPortId );
 				try
 				{
+					_serialPort.openPort();
 					setupCommParams( _serialPort );
 				}
-				catch( UnsupportedCommOperationException e )
+				catch( SerialPortException e )
 				{
 					throw new Error( "Unhandled serial port setup error", e );
 				}
 				try
 				{
-					_input = _serialPort.getInputStream();
-					_output = _serialPort.getOutputStream();
 					_open.set( true );
-					_serialPort.addEventListener( this );
-					_serialPort.notifyOnDataAvailable( true );
+					_serialPort.addEventListener( this, SerialPort.MASK_RXCHAR );
 				}
-				catch( TooManyListenersException e )
-				{
-					throw new Error( "Unhandled serial port communication error", e );
-				}
-				catch( IOException e )
+				catch( SerialPortException e )
 				{
 					throw new Error( "Unhandled serial port communication error", e );
 				}
@@ -161,24 +150,19 @@ public abstract class SerialDevice implements SerialPortEventListener
 		}
 		synchronized( _lock )
 		{
-			if( _output != null )
-			{
-				_output.close();
-			}
-			if( _input != null )
-			{
-				_input.close();
-			}
 			if( _serialPort != null )
 			{
-				_serialPort.removeEventListener();
-				_serialPort.close();
+				try {
+					_serialPort.removeEventListener();
+					_serialPort.closePort();
+				} catch (SerialPortException e) {
+					throw new Error( e );
+				}
 			}
 		}
 	}
 
 	protected abstract void commPortSet();
-	protected abstract void setupCommParams( SerialPort serialPort ) throws UnsupportedCommOperationException;
+	protected abstract void setupCommParams( SerialPort serialPort ) throws SerialPortException;
 	protected abstract void connected();
-
 }

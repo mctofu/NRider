@@ -17,7 +17,6 @@
  */
 package nrider.debug;
 
-import gnu.io.PortInUseException;
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 import nrider.io.*;
@@ -80,7 +79,7 @@ public class SimController implements IWorkoutController, IPerformanceDataSource
 		_active = false;
 	}
 
-	public void connect() throws PortInUseException
+	public void connect()
 	{
 		_active = true;
 	}

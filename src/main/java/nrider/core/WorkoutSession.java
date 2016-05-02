@@ -17,7 +17,6 @@
  */
 package nrider.core;
 
-import gnu.io.PortInUseException;
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 import nrider.io.*;
@@ -214,7 +213,7 @@ public class
                 {
                     controller.connect();
                 }
-                catch( PortInUseException e )
+                catch( Exception e )
                 {
                     LOG.error( e );
                 }
@@ -539,15 +538,11 @@ public class
 						_taskScheduler.schedule( new TimerTask() {
 							public void run()
 							{
-								try
-								{
+								try {
 									riderController.connect();
+								} catch ( Exception e ) {
+									LOG.error( "Error connecting", e );
 								}
-								catch( PortInUseException e )
-								{
-									LOG.error( e );
-								}
-
 							}
 						}, 20000 );
 					}

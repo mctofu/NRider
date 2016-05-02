@@ -17,9 +17,14 @@
  */
 package nrider.io.ant;
 
-import gnu.io.*;
+import jssc.SerialPort;
+import jssc.SerialPortEvent;
+import jssc.SerialPortException;
 import nrider.event.EventPublisher;
-import nrider.io.*;
+import nrider.io.HexUtil;
+import nrider.io.IPerformanceDataListener;
+import nrider.io.IPerformanceDataSource;
+import nrider.io.SerialDevice;
 import nrider.monitor.MonitorTask;
 import org.apache.log4j.Logger;
 
@@ -106,7 +111,7 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 
 	public String getIdentifier()
 	{
-		return "ANT:" + ( getCommPortId() != null ? getCommPortId().getName() : "Unassigned" );
+		return "ANT:" + ( getCommPortId() != null ? getCommPortId() : "Unassigned" );
 	}
 
 	public void serialEvent( SerialPortEvent serialPortEvent )
@@ -115,8 +120,10 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 		{
 			int data;
 			StringBuilder sb = new StringBuilder();
-			while( ( data = read() ) > -1 )
+			int bytesAvail = serialPortEvent.getEventValue();
+			for (int readIndex = 0; readIndex < bytesAvail; readIndex++)
 			{
+				data = read();
 				if( _msgBuffer.size() == 0 )
 				{
 					sb.append( "Read: " );
@@ -346,9 +353,9 @@ public class AntReceiver extends SerialDevice implements IPerformanceDataSource
 	}
 
 	@Override
-	protected void setupCommParams( SerialPort serialPort ) throws UnsupportedCommOperationException
+	protected void setupCommParams( SerialPort serialPort ) throws SerialPortException
 	{
-		serialPort.setSerialPortParams(4800,SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
+		serialPort.setParams(4800,SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
 		serialPort.setFlowControlMode( SerialPort.FLOWCONTROL_NONE  );
 	}
 

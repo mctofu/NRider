@@ -17,7 +17,9 @@
  */
 package nrider.io;
 
-import gnu.io.*;
+import jssc.SerialPort;
+import jssc.SerialPortEvent;
+import jssc.SerialPortException;
 import nrider.event.EventPublisher;
 import nrider.event.IEvent;
 import nrider.monitor.IMonitorable;
@@ -25,7 +27,7 @@ import nrider.monitor.MonitorTask;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Timer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,7 +91,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 		}
 		if( getCommPortId() != null )
 		{
-			return "CompuTrainer:" + getCommPortId().getName();
+			return "CompuTrainer:" + getCommPortId();
 		}
 		return "CompuTrainer:Unassigned";
 	}
@@ -133,20 +135,25 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 	@Override
 	protected void commPortSet()
 	{
-		_performanceDataPublisher.setIdentifier( "CompuTrainer:" + getCommPortId().getName() );		
+		_performanceDataPublisher.setIdentifier( "CompuTrainer:" + getCommPortId() );
 	}
 
 	@Override
-	protected void setupCommParams( SerialPort serialPort ) throws UnsupportedCommOperationException
+	protected void setupCommParams( SerialPort serialPort ) throws SerialPortException
 	{
-		serialPort.setSerialPortParams( 2400, SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_NONE );
+		serialPort.setParams(
+				2400,
+				SerialPort.DATABITS_8,
+				SerialPort.STOPBITS_1,
+				SerialPort.PARITY_NONE);
+
 		// TODO: Mark's doc said RTS/CTS Flow control used.  It worked on a real serial port and the Sewell USB/Serial but not the FTDI.
 //		serialPort.setFlowControlMode( SerialPort.FLOWCONTROL_RTSCTS_OUT | SerialPort.FLOWCONTROL_RTSCTS_IN );
 		serialPort.setFlowControlMode( SerialPort.FLOWCONTROL_NONE );
 	}
 
 	@Override
-	public void connect() throws PortInUseException
+	public void connect()
 	{
 		if( _status != Status.CONNECTED && _status != Status.CONNECTING )
 		{
@@ -170,15 +177,18 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 		}
 	}
 
+	@Override
 	public void serialEvent( SerialPortEvent serialPortEvent )
 	{
 		try
 		{
-			if( serialPortEvent.getEventType() == SerialPortEvent.DATA_AVAILABLE )
+			if( serialPortEvent.isRXCHAR() )
 			{
 				int data;
-				while( ( data = read() ) > -1 )
+				int bytesAvail = serialPortEvent.getEventValue();
+				for (int i = 0; i < bytesAvail; i++)
 				{
+					data = read();
 					_msgBuffer[_msgBufferPos.getAndIncrement()] = (byte) data;
 					if( _status != Status.CONNECTED && _msgBufferPos.get() == 6 ) // handshake message is different from everything else
 					{
@@ -218,7 +228,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 //				sb.append( HexUtil.toHexString( b ) );
 //				sb.append( " ");
 //			}
-//			LOG.debug( "Recieve " + getCommPortId().getName() + ":" + sb.toString() );
+//			LOG.debug( "Recieve " + getCommPortId() + ":" + sb.toString() );
 //		}
 		if( _status == Status.CONNECTING )
 		{
@@ -283,7 +293,7 @@ public class ComputrainerController extends SerialDevice implements IPerformance
 				_status = Status.CONNECTING;
 				super.connect();
 			}
-			catch( PortInUseException e )
+			catch( Exception e )
 			{
 				LOG.error( "reconnect fail", e );
 			}

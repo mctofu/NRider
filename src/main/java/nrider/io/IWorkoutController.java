@@ -17,8 +17,6 @@
  */
 package nrider.io;
 
-import gnu.io.PortInUseException;
-
 import java.io.IOException;
 
 /**
@@ -40,7 +38,7 @@ public interface IWorkoutController
 	public TrainerMode getMode();
 	// temporarily disconnect
 	public void disconnect() throws IOException;
-	public void connect() throws PortInUseException;
+	public void connect();
 	// disconnect and release all resources
 	public void close() throws IOException;
 }
