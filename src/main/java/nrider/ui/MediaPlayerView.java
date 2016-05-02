@@ -17,11 +17,7 @@
  */
 package nrider.ui;
 
-import com.sun.media.jmc.MediaProvider;
-import com.sun.media.jmc.control.VideoDataBuffer;
-import com.sun.media.jmc.control.VideoRenderControl;
-import com.sun.media.jmc.event.VideoRendererEvent;
-import com.sun.media.jmc.event.VideoRendererListener;
+import com.sun.jna.NativeLibrary;
 import nrider.core.IWorkoutListener;
 import nrider.core.RideLoad;
 import nrider.core.Rider;
@@ -30,14 +26,16 @@ import nrider.media.IMediaEventListener;
 import nrider.media.MediaEvent;
 import nrider.ride.IRide;
 import org.apache.log4j.Logger;
+import uk.co.caprica.vlcj.binding.LibVlc;
+import uk.co.caprica.vlcj.component.EmbeddedMediaPlayerComponent;
+import uk.co.caprica.vlcj.discovery.NativeDiscovery;
+import uk.co.caprica.vlcj.player.*;
+import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.IntBuffer;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 /**
  * Use jmc classes from javafx to render video
@@ -47,23 +45,24 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 	private final static Logger LOG = Logger.getLogger( MediaPlayerView.class );
 
 	private JFrame _window;
-	private VideoRenderControl _vrc;
-	private MediaProvider _mp;
 	private JPanel _mediaPanel;
+	private EmbeddedMediaPlayerComponent _mediaPlayerComponent;
+	private int _seekTo;
+	private boolean _startedPlaying;
 
-	public void launch()
+	public void launch( final String vlcPath )
 	{
 		SwingUtilities.invokeLater( new Runnable() {
 			public void run() {
-				init();
+				init( vlcPath );
 			}
 		});
 	}
 
-	private void init()
+	private void init( String vlcPath )
 	{
 		_window = new JFrame();
-		_mediaPanel = new MediaPanel();
+		_mediaPanel = new JPanel();
 		_mediaPanel.setLayout(new BorderLayout());
 
 		_window.add(_mediaPanel, BorderLayout.CENTER);
@@ -73,7 +72,28 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 		_window.pack();
 		_window.setLocationRelativeTo(null);
 		_window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		if( vlcPath != null )
+		{
+			NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), vlcPath);
+		}
+
+		boolean found = new NativeDiscovery().discover();
+		System.out.println(found);
+		System.out.println(LibVlc.INSTANCE.libvlc_get_version());
+
+		_mediaPlayerComponent = new EmbeddedMediaPlayerComponent();
+		_mediaPanel.add(_mediaPlayerComponent);
+
+		_window.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				_mediaPlayerComponent.release();
+			}
+		});
+
 		_window.setVisible( true );
+
 	}
 
 	public void handleMediaEvent( final MediaEvent me )
@@ -87,28 +107,32 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 
 	private void doHandleMediaEvent( MediaEvent me )
 	{
-		try
+		switch( me.getType() )
 		{
-			switch( me.getType() )
-			{
-				case LOAD:
-					loadURI( new URI( me.getMedia() ) );
-					break;
-				case PLAY:
-					_mp.play();
-					break;
-				case SEEK:
-					_mp.setMediaTime( me.getPosition() );
-					break;
-				case PAUSE:
-					_mp.pause();
-					break;
-			}
+			case LOAD:
+				loadMedia( me.getMedia() );
+				break;
+			case PLAY:
+				play();
+				break;
+			case SEEK:
+				if( !_startedPlaying )
+				{
+					_seekTo = me.getPosition() * 1000;
+				}
+				else
+				{
+					_mediaPlayerComponent.getMediaPlayer().setTime(me.getPosition() * 1000);
+				}
+				break;
+			case PAUSE:
+				_mediaPlayerComponent.getMediaPlayer().pause();
+				break;
 		}
-		catch( URISyntaxException e )
-		{
-			LOG.error( "Unable to load", e );
-		}
+	}
+
+	private void play() {
+		_mediaPlayerComponent.getMediaPlayer().play();
 	}
 
 	public void handleLoadAdjust( String riderId, RideLoad newLoad )
@@ -156,97 +180,46 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 		switch( status )
 		{
 			case RUNNING:
-				_mp.play();
+				play();
 				break;
 			case STOPPED:
 			case PAUSED:
-				_mp.pause();
+				_mediaPlayerComponent.getMediaPlayer().pause();
 				break;
 		}
 	}
 
-	private void loadURI(URI uri) {
-		if( _mp != null )
+	private void loadMedia(String path) {
+		_mediaPlayerComponent.getMediaPlayer().pause();
+
+		_mediaPlayerComponent.getMediaPlayer().prepareMedia(path);
+		_mediaPlayerComponent.getMediaPlayer().parseMedia();
+
+		for (TrackInfo track : _mediaPlayerComponent.getMediaPlayer().getTrackInfo( TrackType.VIDEO )) {
+			VideoTrackInfo videoTrack = (VideoTrackInfo) track;
+
+			int width = videoTrack.width();
+			int height = videoTrack.height();
+			_mediaPanel.setPreferredSize(new Dimension(width,
+					height));
+			_window.pack();
+			_window.setLocationRelativeTo(null);
+			break;
+		}
+
+		_mediaPlayerComponent.getMediaPlayer().addMediaPlayerEventListener(new MediaPlayerEventAdapter()
 		{
-			_mp.pause();
-		}
 
-		_mp = new MediaProvider(uri);
-
-		_vrc = _mp.getControl(VideoRenderControl.class);
-		_vrc.addVideoRendererListener(
-				new VideoRendererListener() {
-					public void videoFrameUpdated( VideoRendererEvent videorendererevent) {
-						_window.repaint();
-					}
-				});
-
-		int width = _vrc.getFrameWidth();
-		int height = _vrc.getFrameHeight();
-		_mediaPanel.setPreferredSize(new Dimension( width,
-						height) );
-		_window.pack();
-		_window.setLocationRelativeTo(null);
-	}
-
-	class MediaPanel extends JPanel
-	{
-		@Override
-		protected void paintComponent(java.awt.Graphics g) {
-			super.paintComponent( g );
-			// checkered background
-			Graphics2D graphics = (Graphics2D) g.create();
-			int w = this.getWidth();
-			int h = this.getHeight();
-
-			if ((_mp != null) && (_vrc != null)) {
-//				graphics.setComposite(AlphaComposite.SrcOver
-//						.derive(0.85f));
-				VideoDataBuffer buffer = new VideoDataBuffer( null, 0, 0, 0, VideoDataBuffer.Format.BGR );
-				_vrc.getData( buffer );
-				IntBuffer intBuffer = (IntBuffer) buffer.getBuffer();
-
-                if( intBuffer != null )
-                {
-                    BufferedImage image = (BufferedImage) createImage( buffer.getWidth(), buffer.getHeight() );
-
-                    image.setRGB( 0, 0, buffer.getWidth(), buffer.getHeight(), intBuffer.array(), 0, buffer.getWidth() );
-
-                    AffineTransform transform = new AffineTransform();
-                    transform.scale( 1, -1 );
-                    transform.translate( 0, -buffer.getHeight() );
-
-                    graphics.drawImage( image, transform, this );
-                }
-
-				_vrc.releaseData( buffer );
-
-				graphics.setComposite(AlphaComposite.SrcOver);
-				graphics.setColor(Color.red.darker());
-
-				graphics.setFont(new Font("Arial", Font.BOLD, 12));
-				graphics.drawString(
-						"Curr " + format(_mp.getMediaTime()), 10, 20);
-				graphics.drawString(
-						"Total " + format(_mp.getDuration()), 10, 40);
-				graphics.drawString("Rate " + _mp.getRate(), 10, 60);
+			@Override
+			public void playing(MediaPlayer mediaPlayer) {
+				_startedPlaying = true;
+				if (_seekTo > 0)
+				{
+					int seekTo = _seekTo;
+					_seekTo = 0;
+					mediaPlayer.setTime(seekTo);
+				}
 			}
-		}
-
-		private String format(int val, int places) {
-			String result = "" + val;
-			while (result.length() < places)
-				result = "0" + result;
-			return result;
-		}
-
-		private String format(double val) {
-			int minutes = (int) (val / 60);
-			int seconds = (int) val % 60;
-			int milli = (int) (val * 1000) % 1000;
-
-			return format(minutes, 2) + ":" + format(seconds, 2) + "."
-					+ format(milli, 3);
-		}
-	};
+		});
+	}
 }

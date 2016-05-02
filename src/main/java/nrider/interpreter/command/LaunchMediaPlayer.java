@@ -34,7 +34,10 @@ public class LaunchMediaPlayer extends BaseCommand
 	public String run( String[] args ) throws Exception
 	{
 		MediaPlayerView mpv = new MediaPlayerView();
-		mpv.launch();
+
+		String vlcPath = args.length > 0 ? args[0] : null;
+		mpv.launch( vlcPath );
+
 		WorkoutSession.instance().addMediaEventListner( mpv );
 		WorkoutSession.instance().addWorkoutListener( mpv );
 
