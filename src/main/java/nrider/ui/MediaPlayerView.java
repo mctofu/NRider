@@ -17,6 +17,7 @@
  */
 package nrider.ui;
 
+import com.sun.jna.Memory;
 import com.sun.jna.NativeLibrary;
 import nrider.core.IWorkoutListener;
 import nrider.core.RideLoad;
@@ -27,15 +28,18 @@ import nrider.media.MediaEvent;
 import nrider.ride.IRide;
 import org.apache.log4j.Logger;
 import uk.co.caprica.vlcj.binding.LibVlc;
-import uk.co.caprica.vlcj.component.EmbeddedMediaPlayerComponent;
+import uk.co.caprica.vlcj.component.DirectMediaPlayerComponent;
 import uk.co.caprica.vlcj.discovery.NativeDiscovery;
 import uk.co.caprica.vlcj.player.*;
+import uk.co.caprica.vlcj.player.direct.*;
+import uk.co.caprica.vlcj.player.direct.format.RV32BufferFormat;
 import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 
 /**
  * Use jmc classes from javafx to render video
@@ -46,9 +50,13 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 
 	private JFrame _window;
 	private JPanel _mediaPanel;
-	private EmbeddedMediaPlayerComponent _mediaPlayerComponent;
+	private BufferedImage _image;
+	private DirectMediaPlayerComponent _mediaPlayerComponent;
 	private int _seekTo;
 	private boolean _startedPlaying;
+	private int _currentWidth;
+	private int _currentHeight;
+	private RenderCallback _currentCallback;
 
 	public void launch( final String vlcPath )
 	{
@@ -62,7 +70,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 	private void init( String vlcPath )
 	{
 		_window = new JFrame();
-		_mediaPanel = new JPanel();
+		_mediaPanel = new VideoSurfacePanel();
 		_mediaPanel.setLayout(new BorderLayout());
 
 		_window.add(_mediaPanel, BorderLayout.CENTER);
@@ -82,8 +90,19 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 		System.out.println(found);
 		System.out.println(LibVlc.INSTANCE.libvlc_get_version());
 
-		_mediaPlayerComponent = new EmbeddedMediaPlayerComponent();
-		_mediaPanel.add(_mediaPlayerComponent);
+		BufferFormatCallback bufferFormatCallback = new BufferFormatCallback() {
+			@Override
+			public BufferFormat getBufferFormat(int sourceWidth, int sourceHeight) {
+				return new RV32BufferFormat(_currentWidth, _currentHeight);
+			}
+		};
+
+		_mediaPlayerComponent = new DirectMediaPlayerComponent(bufferFormatCallback) {
+			@Override
+			protected RenderCallback onGetRenderCallback() {
+				return new SwitchingCallback();
+			}
+		};
 
 		_window.addWindowListener(new WindowAdapter() {
 			@Override
@@ -91,6 +110,8 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 				_mediaPlayerComponent.release();
 			}
 		});
+
+		_mediaPanel.setVisible(true);
 
 		_window.setVisible( true );
 
@@ -202,8 +223,19 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 			int height = videoTrack.height();
 			_mediaPanel.setPreferredSize(new Dimension(width,
 					height));
+			_mediaPanel.setMinimumSize(new Dimension(width, height));
+			_mediaPanel.setMaximumSize(new Dimension(width, height));
+
 			_window.pack();
 			_window.setLocationRelativeTo(null);
+			_currentWidth = width;
+			_currentHeight = height;
+			_currentCallback = new PlayerRenderCallbackAdapter();
+			_image = GraphicsEnvironment
+					.getLocalGraphicsEnvironment()
+					.getDefaultScreenDevice()
+					.getDefaultConfiguration()
+					.createCompatibleImage(width, height);
 			break;
 		}
 
@@ -222,4 +254,44 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener
 			}
 		});
 	}
+
+	private class VideoSurfacePanel extends JPanel {
+
+		private VideoSurfacePanel() {
+			setBackground(Color.black);
+			setOpaque(true);
+//			setPreferredSize(new Dimension(width, height));
+//			setMinimumSize(new Dimension(width, height));
+//			setMaximumSize(new Dimension(width, height));
+		}
+
+		@Override
+		protected void paintComponent(Graphics g) {
+			Graphics2D g2 = (Graphics2D)g;
+			g2.drawImage(_image, null, 0, 0);
+		}
+	}
+
+	private class SwitchingCallback implements RenderCallback {
+
+		@Override
+		public void display(DirectMediaPlayer directMediaPlayer, Memory[] memories, BufferFormat bufferFormat) {
+			_currentCallback.display(directMediaPlayer, memories, bufferFormat);
+		}
+	}
+
+	private class PlayerRenderCallbackAdapter extends RenderCallbackAdapter {
+
+		private PlayerRenderCallbackAdapter() {
+			super(new int[_currentWidth * _currentHeight]);
+		}
+
+		@Override
+		protected void onDisplay(DirectMediaPlayer mediaPlayer, int[] rgbBuffer) {
+			// Simply copy buffer to the image and repaint
+			_image.setRGB(0, 0, _currentWidth, _currentHeight, rgbBuffer, 0, _currentWidth);
+			_mediaPanel.repaint();
+		}
+	}
+
 }
