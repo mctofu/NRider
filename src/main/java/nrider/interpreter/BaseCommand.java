@@ -1,37 +1,19 @@
 package nrider.interpreter;
 
-import nrider.interpreter.ICommand;
+public abstract class BaseCommand implements ICommand {
+    public String getName() {
+        String name = this.getClass().getSimpleName();
+        return name.substring(0, 1).toLowerCase() + name.substring(1, name.length());
+    }
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
+    public abstract String run(String[] args) throws Exception;
 
-/**
- * Created by IntelliJ IDEA.
- * User: David
- * Date: Oct 31, 2009
- * Time: 11:31:51 PM
- * To change this template use File | Settings | File Templates.
- */
-public abstract class BaseCommand implements ICommand
-{
-	public String getName()
-	{
-		String name = this.getClass().getSimpleName();
-		return name.substring( 0, 1 ).toLowerCase() + name.substring( 1, name.length() );
-	}
-
-	public abstract String run( String[] args ) throws Exception;
-
-	public String execute( String[] args )
-	{
-		try
-		{
-			return run( args );
-		}
-		catch( Exception e )
-		{
-			e.printStackTrace( );
-			return "Error: " + e.getMessage();
-		}
-	}
+    public String execute(String[] args) {
+        try {
+            return run(args);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error: " + e.getMessage();
+        }
+    }
 }

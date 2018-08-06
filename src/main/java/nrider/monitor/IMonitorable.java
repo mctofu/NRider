@@ -1,6 +1,5 @@
 package nrider.monitor;
 
-public interface IMonitorable
-{
-	public void monitorCheck();
+public interface IMonitorable {
+    void monitorCheck();
 }

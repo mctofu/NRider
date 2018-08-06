@@ -1,11 +1,7 @@
 package nrider.event;
 
-/**
- *
- */
-public interface IEventPublisher<T>
-{
-	void addListener( T listener );
+public interface IEventPublisher<T> {
+    void addListener(T listener);
 
-	void publishEvent( IEvent<T> event );
+    void publishEvent(IEvent<T> event);
 }
