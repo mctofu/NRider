@@ -25,7 +25,7 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 
 /**
- * Use jmc classes from javafx to render video
+ * Uses vlcj to render video
  */
 public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
     private final static Logger LOG = Logger.getLogger(MediaPlayerView.class);
@@ -41,11 +41,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
     private RenderCallback _currentCallback;
 
     public void launch(final String vlcPath) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                init(vlcPath);
-            }
-        });
+        SwingUtilities.invokeLater(() -> init(vlcPath));
     }
 
     private void init(String vlcPath) {
@@ -66,8 +62,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
         }
 
         boolean found = new NativeDiscovery().discover();
-        System.out.println(found);
-        System.out.println(LibVlc.INSTANCE.libvlc_get_version());
+        LOG.info("vlc discovery result: " + (found ? LibVlc.INSTANCE.libvlc_get_version() : "not found"));
 
         BufferFormatCallback bufferFormatCallback = new BufferFormatCallback() {
             @Override
@@ -97,11 +92,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
     }
 
     public void handleMediaEvent(final MediaEvent me) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                doHandleMediaEvent(me);
-            }
-        });
+        SwingUtilities.invokeLater(() -> doHandleMediaEvent(me));
     }
 
     private void doHandleMediaEvent(MediaEvent me) {
@@ -152,11 +143,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
 
     public void handleRideStatusUpdate(final IRide.Status status) {
         SwingUtilities.invokeLater(
-                new Runnable() {
-                    public void run() {
-                        doHandleRideStatusUpdate(status);
-                    }
-                });
+                () -> doHandleRideStatusUpdate(status));
     }
 
     private void doHandleRideStatusUpdate(IRide.Status status) {
