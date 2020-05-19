@@ -6,6 +6,8 @@ import nrider.io.PerformanceData;
 import java.util.HashMap;
 
 public class RiderPerformanceMonitor implements IPerformanceDataListener {
+    private final float MIN_SPEED = 16.5f;
+
     private boolean _active;
     private HashMap<String, RiderMonitor> _riderMap = new HashMap<>();
 
@@ -14,7 +16,7 @@ public class RiderPerformanceMonitor implements IPerformanceDataListener {
             switch (data.getType()) {
                 case SPEED:
                     float speed = (float) (data.getValue() * 2.237);
-                    if (speed < 18) {
+                    if (speed < MIN_SPEED) {
                         sendSpeedLow(identifier);
                     } else if (speed > 25) {
                         sendSpeedHigh(identifier);
@@ -28,7 +30,7 @@ public class RiderPerformanceMonitor implements IPerformanceDataListener {
                     double targetWatts = WorkoutSession.instance().getTargetWatts(identifier);
                     int threshold = WorkoutSession.instance().getRider(identifier).getThresholdPower();
                     RiderMonitor monitor = getMonitor(identifier);
-                    if (monitor.getLastSpeed() > 3 && (monitor.getLastSpeed() < 18 || (actualWatts < targetWatts * .5))) {
+                    if (monitor.getLastSpeed() > 3 && (monitor.getLastSpeed() < MIN_SPEED || (actualWatts < targetWatts * .5))) {
                         if (monitor.getAssisted().setAlert()) {
                             WorkoutSession.instance().addRiderAlert(identifier, WorkoutSession.RiderAlertType.POWER_ASSIST);
                             WorkoutSession.instance().setRiderHandicap(identifier, threshold / 2);
