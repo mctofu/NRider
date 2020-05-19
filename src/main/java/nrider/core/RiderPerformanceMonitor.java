@@ -8,8 +8,14 @@ import java.util.HashMap;
 public class RiderPerformanceMonitor implements IPerformanceDataListener {
     private final float MIN_SPEED = 16.5f;
 
+    private final WorkoutSession _workout;
+    private final HashMap<String, RiderMonitor> _riderMap = new HashMap<>();
     private boolean _active;
-    private HashMap<String, RiderMonitor> _riderMap = new HashMap<>();
+
+
+    public RiderPerformanceMonitor(WorkoutSession workout) {
+        _workout = workout;
+    }
 
     public void handlePerformanceData(String identifier, PerformanceData data) {
         if (_active) {
@@ -27,18 +33,18 @@ public class RiderPerformanceMonitor implements IPerformanceDataListener {
                     break;
                 case POWER:
                     float actualWatts = data.getValue();
-                    double targetWatts = WorkoutSession.instance().getTargetWatts(identifier);
-                    int threshold = WorkoutSession.instance().getRider(identifier).getThresholdPower();
+                    double targetWatts = _workout.getTargetWatts(identifier);
+                    int threshold = _workout.getRider(identifier).getThresholdPower();
                     RiderMonitor monitor = getMonitor(identifier);
                     if (monitor.getLastSpeed() > 3 && (monitor.getLastSpeed() < MIN_SPEED || (actualWatts < targetWatts * .5))) {
                         if (monitor.getAssisted().setAlert()) {
-                            WorkoutSession.instance().addRiderAlert(identifier, WorkoutSession.RiderAlertType.POWER_ASSIST);
-                            WorkoutSession.instance().setRiderHandicap(identifier, threshold / 2);
+                            _workout.addRiderAlert(identifier, WorkoutSession.RiderAlertType.POWER_ASSIST);
+                            _workout.setRiderHandicap(identifier, threshold / 2);
                         }
                     } else {
                         if (monitor.getAssisted().clearAlert()) {
-                            WorkoutSession.instance().removeRiderAlert(identifier, WorkoutSession.RiderAlertType.POWER_ASSIST);
-                            WorkoutSession.instance().setRiderHandicap(identifier, 0);
+                            _workout.removeRiderAlert(identifier, WorkoutSession.RiderAlertType.POWER_ASSIST);
+                            _workout.setRiderHandicap(identifier, 0);
                         }
                     }
                     break;
@@ -49,30 +55,30 @@ public class RiderPerformanceMonitor implements IPerformanceDataListener {
     private void sendSpeedLow(String identifier) {
         RiderMonitor monitor = getMonitor(identifier);
         if (monitor.getOverSpeed().clearAlert(true)) {
-            WorkoutSession.instance().removeRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_HIGH);
+            _workout.removeRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_HIGH);
         }
         if (monitor.getUnderSpeed().setAlert()) {
-            WorkoutSession.instance().addRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_LOW);
+            _workout.addRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_LOW);
         }
     }
 
     private void sendSpeedHigh(String identifier) {
         RiderMonitor monitor = getMonitor(identifier);
         if (monitor.getUnderSpeed().clearAlert(true)) {
-            WorkoutSession.instance().removeRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_LOW);
+            _workout.removeRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_LOW);
         }
         if (monitor.getOverSpeed().setAlert()) {
-            WorkoutSession.instance().addRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_HIGH);
+            _workout.addRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_HIGH);
         }
     }
 
     private void clearSpeed(String identifier) {
         RiderMonitor monitor = getMonitor(identifier);
         if (monitor.getOverSpeed().clearAlert()) {
-            WorkoutSession.instance().removeRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_HIGH);
+            _workout.removeRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_HIGH);
         }
         if (monitor.getUnderSpeed().clearAlert()) {
-            WorkoutSession.instance().removeRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_LOW);
+            _workout.removeRiderAlert(identifier, WorkoutSession.RiderAlertType.SPEED_LOW);
         }
     }
 

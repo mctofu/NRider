@@ -1,8 +1,12 @@
 package nrider.core;
 
 import nrider.event.EventPublisher;
-import nrider.event.IEvent;
-import nrider.io.*;
+import nrider.io.ControlData;
+import nrider.io.IControlDataListener;
+import nrider.io.IPerformanceDataListener;
+import nrider.io.IPerformanceDataSource;
+import nrider.io.IWorkoutController;
+import nrider.io.PerformanceData;
 import nrider.media.IMediaEventListener;
 import nrider.media.MediaEvent;
 import nrider.net.NetSource;
@@ -10,17 +14,25 @@ import nrider.ride.IRide;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Central control for a workout.  Manages riders and trainers in a workout.
  * TODO: review/fix thread safety after sorting out how everything should work
  */
-public class
-WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, IControlDataListener, IMediaEventListener {
+public class WorkoutSession implements
+        IPerformanceDataListener, IPerformanceDataSource, IControlDataListener, IMediaEventListener {
+
     private final static Logger LOG = Logger.getLogger(WorkoutSession.class);
 
-    private static WorkoutSession _instance = new WorkoutSession();
+    private final static WorkoutSession _instance = new WorkoutSession();
 
     public static WorkoutSession instance() {
         return _instance;
@@ -29,7 +41,7 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
     public enum RiderAlertType {
         SPEED_HIGH("SpdHi"), SPEED_LOW("SpdLo"), POWER_ASSIST("PwrBst");
 
-        private String _shortName;
+        private final String _shortName;
 
         RiderAlertType(String shortName) {
             _shortName = shortName;
@@ -40,23 +52,27 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
         }
     }
 
-    private List<Rider> _riders = new ArrayList<>();
-    private List<IWorkoutController> _controllers = new ArrayList<>();
-    private Map<String, RiderSession> _deviceMap = new HashMap<>();
-    private Map<String, RiderSession> _riderMap = new HashMap<>();
-    private HashSet<String> _unmappedIdentifiers = new HashSet<>();
+    private final List<Rider> _riders = new ArrayList<>();
+    private final List<IWorkoutController> _controllers = new ArrayList<>();
+    private final Map<String, RiderSession> _deviceMap = new HashMap<>();
+    private final Map<String, RiderSession> _riderMap = new HashMap<>();
+    private final HashSet<String> _unmappedIdentifiers = new HashSet<>();
 
-    private EventPublisher<IPerformanceDataListener> _netPerformancePublisher = EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
-    private EventPublisher<IPerformanceDataListener> _localPerformancePublisher = EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
-    private EventPublisher<IPerformanceDataListener> _unmappedPerformancePublisher = EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
-    private EventPublisher<IMediaEventListener> _mediaEventPublisher = EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
-    private EventPublisher<IWorkoutListener> _workoutPublisher = EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
+    private final EventPublisher<IPerformanceDataListener> _netPerformancePublisher =
+            EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
+    private final EventPublisher<IPerformanceDataListener> _localPerformancePublisher =
+            EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
+    private final EventPublisher<IPerformanceDataListener> _unmappedPerformancePublisher =
+            EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
+    private final EventPublisher<IMediaEventListener> _mediaEventPublisher =
+            EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
+    private final EventPublisher<IWorkoutListener> _workoutPublisher =
+            EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
 
-    private Timer _taskScheduler = new Timer();
+    private final Timer _taskScheduler = new Timer();
+    private final RiderPerformanceMonitor _riderPerformanceMonitor = new RiderPerformanceMonitor(this);
 
     private IRide _ride;
-    private RiderPerformanceMonitor _riderPerformanceMonitor = new RiderPerformanceMonitor();
-    private NetSource _netSource;
 
     public WorkoutSession() {
         addLocalPerformanceDataListener(_riderPerformanceMonitor);
@@ -64,21 +80,13 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
 
     public void setRideElapsedTime(final long elapsed) {
         _workoutPublisher.publishEvent(
-                new IEvent<IWorkoutListener>() {
-                    public void trigger(IWorkoutListener target) {
-                        target.handleRideTimeUpdate(elapsed);
-                    }
-                });
+                target -> target.handleRideTimeUpdate(elapsed));
     }
 
     public void setRide(final IRide ride) {
         _ride = ride;
         _workoutPublisher.publishEvent(
-                new IEvent<IWorkoutListener>() {
-                    public void trigger(IWorkoutListener target) {
-                        target.handleRideLoaded(ride);
-                    }
-                });
+                target -> target.handleRideLoaded(ride));
     }
 
     public IRide getRide() {
@@ -99,36 +107,23 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
             RiderSession session = new RiderSession(rider, source);
             _riderMap.put(rider.getIdentifier(), session);
             _workoutPublisher.publishEvent(
-                    new IEvent<IWorkoutListener>() {
-                        public void trigger(IWorkoutListener target) {
-                            target.handleAddRider(rider);
-                        }
-                    });
+                    target -> target.handleAddRider(rider));
         }
     }
 
     public void addRiderAlert(final String identifier, final RiderAlertType alert) {
         _workoutPublisher.publishEvent(
-                new IEvent<IWorkoutListener>() {
-                    public void trigger(IWorkoutListener target) {
-                        target.handleAddRiderAlert(identifier, alert);
-                    }
-                });
+                target -> target.handleAddRiderAlert(identifier, alert));
     }
 
     public void removeRiderAlert(final String identifier, final RiderAlertType alert) {
         _workoutPublisher.publishEvent(
-                new IEvent<IWorkoutListener>() {
-                    public void trigger(IWorkoutListener target) {
-                        target.handleRemoveRiderAlert(identifier, alert);
-                    }
-                });
+                target -> target.handleRemoveRiderAlert(identifier, alert));
     }
-
 
     public List<Rider> getRiders() {
         synchronized (_riders) {
-            return new ArrayList<Rider>(_riders);
+            return new ArrayList<>(_riders);
         }
     }
 
@@ -211,11 +206,7 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
                         rider.setCurrentLoad(load);
                         controller.setLoad(rider.getLoadForWorkout());
                         _workoutPublisher.publishEvent(
-                                new IEvent<IWorkoutListener>() {
-                                    public void trigger(IWorkoutListener target) {
-                                        target.handleLoadAdjust(rider.getRider().getIdentifier(), load);
-                                    }
-                                });
+                                target -> target.handleLoadAdjust(rider.getRider().getIdentifier(), load));
                     }
                 }
             }
@@ -235,11 +226,7 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
                     _ride.start();
                     _riderPerformanceMonitor.activate();
                     _workoutPublisher.publishEvent(
-                            new IEvent<IWorkoutListener>() {
-                                public void trigger(IWorkoutListener target) {
-                                    target.handleRideStatusUpdate(_ride.getStatus());
-                                }
-                            });
+                            target -> target.handleRideStatusUpdate(_ride.getStatus()));
                 }
             }
         }
@@ -257,11 +244,7 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
 
                     _riderPerformanceMonitor.deactivate();
                     _workoutPublisher.publishEvent(
-                            new IEvent<IWorkoutListener>() {
-                                public void trigger(IWorkoutListener target) {
-                                    target.handleRideStatusUpdate(_ride.getStatus());
-                                }
-                            });
+                            target -> target.handleRideStatusUpdate(_ride.getStatus()));
                 }
             }
         }
@@ -302,19 +285,11 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
             if (_deviceMap.containsKey(identifier)) {
                 final RiderSession rs = _deviceMap.get(identifier);
                 getPublisher(rs).publishEvent(
-                        new IEvent<IPerformanceDataListener>() {
-                            public void trigger(IPerformanceDataListener target) {
-                                target.handlePerformanceData(rs.getRider().getIdentifier(), data);
-                            }
-                        });
+                        target -> target.handlePerformanceData(rs.getRider().getIdentifier(), data));
             } else {
                 _unmappedIdentifiers.add(identifier);
                 _unmappedPerformancePublisher.publishEvent(
-                        new IEvent<IPerformanceDataListener>() {
-                            public void trigger(IPerformanceDataListener target) {
-                                target.handlePerformanceData(identifier, data);
-                            }
-                        });
+                        target -> target.handlePerformanceData(identifier, data));
 
             }
         }
@@ -322,13 +297,13 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
 
     public String[] getUnmappedIdentifiers() {
         synchronized (_riders) {
-            return _unmappedIdentifiers.toArray(new String[_unmappedIdentifiers.size()]);
+            return _unmappedIdentifiers.toArray(new String[0]);
         }
     }
 
     public Map<String, String> getMappedIdentifiers() {
         synchronized (_riders) {
-            HashMap<String, String> result = new HashMap<String, String>();
+            HashMap<String, String> result = new HashMap<>();
             for (Map.Entry<String, RiderSession> entry : _deviceMap.entrySet()) {
                 result.put(entry.getKey(), entry.getValue().getRider().getName());
             }
@@ -386,11 +361,7 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
 
     public void handleMediaEvent(final MediaEvent me) {
         _mediaEventPublisher.publishEvent(
-                new IEvent<IMediaEventListener>() {
-                    public void trigger(IMediaEventListener target) {
-                        target.handleMediaEvent(me);
-                    }
-                });
+                target -> target.handleMediaEvent(me));
     }
 
     public void close() throws IOException {
@@ -432,11 +403,7 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
                 rider.setThresholdPower(thresholdPower);
                 reapplyRiderLoad(identifier);
                 _workoutPublisher.publishEvent(
-                        new IEvent<IWorkoutListener>() {
-                            public void trigger(IWorkoutListener target) {
-                                target.handleRiderThresholdAdjust(identifier, thresholdPower);
-                            }
-                        });
+                        target -> target.handleRiderThresholdAdjust(identifier, thresholdPower));
             }
         }
     }
@@ -476,7 +443,6 @@ WorkoutSession implements IPerformanceDataListener, IPerformanceDataSource, ICon
 
 
     public void setNetSource(NetSource netSource) {
-        _netSource = netSource;
         addPerformanceDataListener(netSource);
         addPerformanceDataSource(netSource);
         addWorkoutListener(netSource);
