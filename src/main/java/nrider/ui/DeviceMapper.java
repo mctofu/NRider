@@ -17,7 +17,7 @@ import java.util.Map;
  * Simple UI for mapping devices to users
  */
 public class DeviceMapper implements IPerformanceDataListener {
-    private static Font _bigAFont = new Font("Serif", Font.PLAIN, 30);
+    private static Font _bigAFont = new Font(Font.SANS_SERIF, Font.PLAIN, 30);
     private JFrame _window;
     private JList<String> _riders;
     private JList<DeviceEntry> _devices;

@@ -7,6 +7,7 @@ import nrider.core.WorkoutSession;
 import nrider.io.IPerformanceDataListener;
 import nrider.io.PerformanceData;
 import nrider.ride.IRide;
+import nrider.ui.FontScalingLabel;
 import nrider.ui.PerformanceStatView;
 import nrider.ui.RecentPerformanceView;
 import nrider.ui.RideScriptView;
@@ -21,7 +22,9 @@ import java.util.HashSet;
  * Really basic UI for debugging.
  */
 public class NRiderClient implements IPerformanceDataListener, IWorkoutListener {
-    private static Font _bigAFont = new Font("Serif", Font.PLAIN, 30);
+    private static final String MAIN_REF_TEXT = "Calibration__";
+    private static Font DEFAULT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 30);
+
     private JFrame _window;
     private RiderListView _riderListView;
     private JLabel _workoutLoad;
@@ -38,19 +41,41 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
 
     private void init() {
         _window = new JFrame();
-        _window.setSize(500, 600);
+        _window.setSize(1600, 800);
 
         Container content = _window.getContentPane();
-        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        _rideTime = createLabel("00:00:00");
-        content.add(_rideTime);
-        _workoutLoad = createLabel("Workout Load:");
-        content.add(_workoutLoad);
-        _rideScriptView = new RideScriptView();
-        content.add(_rideScriptView);
+        content.setLayout(new GridBagLayout());
 
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.BOTH;
+        c.weightx = .5;
+
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weighty = .05;
+        c.anchor = GridBagConstraints.CENTER;
+        _rideTime = createLabel("00:00:00", MAIN_REF_TEXT);
+        _rideTime.setHorizontalAlignment(SwingConstants.CENTER);
+        content.add(_rideTime,c );
+
+        c.gridy = 1;
+        c.weighty = .05;
+        _workoutLoad = createLabel("Workout Load: 0%", MAIN_REF_TEXT);
+        _workoutLoad.setHorizontalAlignment(SwingConstants.CENTER);
+        content.add(_workoutLoad, c);
+
+        c.gridy = 2;
+        c.weighty = .2;
+        c.anchor = GridBagConstraints.CENTER;
+        _rideScriptView = new RideScriptView();
+        content.add(_rideScriptView, c);
+
+        c.gridy = 3;
+        c.anchor = GridBagConstraints.SOUTH;
+        c.weighty = .6;
+        c.insets = new Insets(50, 50, 50, 50);
         _riderListView = new RiderListView();
-        content.add(_riderListView.getContainer());
+        content.add(_riderListView.getContainer(), c);
         _window.setVisible(true);
     }
 
@@ -134,13 +159,13 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         });
     }
 
-    private JLabel createLabel(String text) {
-        return createLabel(text, true);
+    private JLabel createLabel(String text, String refText) {
+        return createLabel(text, refText, true);
     }
 
-    private JLabel createLabel(String text, boolean visible) {
-        JLabel label = new JLabel(text);
-        label.setFont(_bigAFont);
+    private FontScalingLabel createLabel(String text, String refText, boolean visible) {
+        FontScalingLabel label = new FontScalingLabel(text, refText, 30, 70);
+        label.setFont(DEFAULT_FONT);
         label.setVisible(visible);
         return label;
     }
@@ -160,46 +185,49 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         private JLabel _calibration;
 
         public RiderListView() {
-            _container.setPreferredSize(new Dimension(800, 200));
             GridBagConstraints c = new GridBagConstraints();
+            c.weightx = .2;
+            c.weighty = .2;
+            c.fill = GridBagConstraints.BOTH;
+
             c.gridx = 0;
-            _riderName = createLabel("Name");
+            _riderName = createLabel("Name", MAIN_REF_TEXT);
             c.gridy = 0;
             _container.add(_riderName, c);
 
-            _threshold = createLabel("Threshold");
+            _threshold = createLabel("Threshold", MAIN_REF_TEXT);
             c.gridy = 1;
             _container.add(_threshold, c);
 
-            _alert = createLabel("");
+            _alert = createLabel("", MAIN_REF_TEXT);
             c.gridy = 2;
             _container.add(_alert, c);
 
-            _speed = createLabel("Speed");
+            _speed = createLabel("Speed", MAIN_REF_TEXT);
             c.gridy = 3;
             _container.add(_speed, c);
 
-            _cadence = createLabel("Cadence", false);
+            _cadence = createLabel("Cadence", MAIN_REF_TEXT, false);
             c.gridy = 4;
             _container.add(_cadence, c);
 
-            _power = createLabel("Power");
+            _power = createLabel("Power", MAIN_REF_TEXT);
             c.gridy = 5;
             _container.add(_power, c);
 
-            _extHr = createLabel("Ext HR", false);
+            _extHr = createLabel("Ext HR", MAIN_REF_TEXT, false);
             c.gridy = 6;
             _container.add(_extHr, c);
 
-            _extCadence = createLabel("Ext Cadence", false);
+            _extCadence = createLabel("Ext Cadence", MAIN_REF_TEXT, false);
             c.gridy = 7;
             _container.add(_extCadence, c);
 
-            _extPower = createLabel("Ext Power", false);
+            _extPower = createLabel("Ext Power", MAIN_REF_TEXT, false);
             c.gridy = 8;
             _container.add(_extPower, c);
 
-            _calibration = createLabel("Calibration");
+            _calibration = createLabel("Calibration", MAIN_REF_TEXT);
             c.gridy = 9;
             _container.add(_calibration, c);
         }
@@ -276,22 +304,30 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         public RiderView(Rider rider, Container container, int columnNumber) {
             _container = container;
             GridBagConstraints c = new GridBagConstraints();
+            c.weightx = .2;
+            c.weighty = .2;
+            c.fill = GridBagConstraints.BOTH;
             c.ipadx = 20;
+
             c.gridx = columnNumber;
 
-            _name = createLabel(rider.getName());
+            _name = createLabel(rider.getName(), MAIN_REF_TEXT);
+            _name.setHorizontalAlignment(SwingConstants.CENTER);
             c.gridy = 0;
             c.gridwidth = 2;
             _container.add(_name, c);
 
-            _riderThreshold = createLabel(rider.getThresholdPower() + "");
+            _riderThreshold = createLabel(Integer.toString(rider.getThresholdPower()), PerformanceStatView.METRIC_REF_TEXT);
+            _riderThreshold.setHorizontalAlignment(SwingConstants.CENTER);
             c.gridy = 1;
+            c.gridwidth = 2;
             _container.add(_riderThreshold, c);
 
-            _alert = createLabel("", false);
+            _alert = createLabel("", MAIN_REF_TEXT, false);
             _alert.setBackground(Color.YELLOW);
             _alert.setForeground(Color.ORANGE);
             c.gridy = 2;
+            c.gridwidth = 2;
             _container.add(_alert, c);
 
             c.gridwidth = 1;
@@ -324,7 +360,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
             _extPower.setVisible(false);
             addPerformanceStatView(_extPower, c);
 
-            _calibration = createLabel("", false);
+            _calibration = createLabel("", PerformanceStatView.METRIC_REF_TEXT, false);
             c.gridy = 9;
             c.gridwidth = 2;
             _container.add(_calibration, c);
@@ -334,13 +370,14 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         }
 
         private void addPerformanceStatView(PerformanceStatView perf, GridBagConstraints c) {
+            double weightx = c.weightx;
             int gridX = c.gridx;
             _container.add(perf.getLabel(), c);
             c.gridx = gridX + 1;
+            c.weightx = weightx + .2;
             _container.add(perf.getGraph(), c);
             c.gridx = gridX;
-
-
+            c.weightx = weightx;
         }
 
         public Container getContainer() {

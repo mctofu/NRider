@@ -5,6 +5,8 @@ import java.awt.*;
 import java.text.NumberFormat;
 
 public class PerformanceStatView {
+    public static final String METRIC_REF_TEXT = "33.333";
+
     private RecentPerformanceView _performanceGraphView;
     private JLabel _value;
     private long _initialTime;
@@ -13,12 +15,10 @@ public class PerformanceStatView {
 
     public PerformanceStatView(double minY, double maxY, double window, NumberFormat numberFormat) {
         _performanceGraphView = new RecentPerformanceView(window, minY, maxY);
-        _performanceGraphView.setMinimumSize(new Dimension(50, 25));
-        _performanceGraphView.setPreferredSize(new Dimension(50, 25));
 
-        _value = new JLabel("", SwingConstants.RIGHT);
-        _value.setPreferredSize(new Dimension(50, 25));
-        _value.setFont(new Font("Serif", Font.PLAIN, 30));
+        _value = new FontScalingLabel("", METRIC_REF_TEXT, 30, 80);
+        _value.setHorizontalAlignment(SwingConstants.RIGHT);
+        _value.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 30));
         _initialTime = System.currentTimeMillis();
         _numberFormat = numberFormat;
     }
