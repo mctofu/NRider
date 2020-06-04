@@ -7,9 +7,9 @@ import java.util.LinkedList;
 public class RecentPerformanceView extends GraphView {
     public enum DataType {NORMAL, EXTREME, WARNING}
 
-    private double _window;
-    private LinkedList<GraphPoint> _history = new LinkedList<GraphPoint>();
-    private double _initialMaxY;
+    private final double _window;
+    private final LinkedList<GraphPoint> _history = new LinkedList<>();
+    private final double _initialMaxY;
 
     public RecentPerformanceView(double window, double minY, double maxY) {
         _window = window;

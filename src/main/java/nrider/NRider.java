@@ -19,11 +19,13 @@ public class NRider {
             console.start();
         } catch (Exception e) {
             e.printStackTrace();
+            System.exit(1);
         } finally {
             try {
                 WorkoutSession.instance().close();
             } catch (Exception e) {
                 e.printStackTrace();
+                System.exit(1);
             }
         }
         System.exit(0);

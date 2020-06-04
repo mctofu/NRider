@@ -7,10 +7,10 @@ import java.text.NumberFormat;
 public class PerformanceStatView {
     public static final String METRIC_REF_TEXT = "33.333";
 
-    private RecentPerformanceView _performanceGraphView;
-    private JLabel _value;
-    private long _initialTime;
-    private NumberFormat _numberFormat;
+    private final RecentPerformanceView _performanceGraphView;
+    private final JLabel _value;
+    private final long _initialTime;
+    private final NumberFormat _numberFormat;
 
 
     public PerformanceStatView(double minY, double maxY, double window, NumberFormat numberFormat) {
@@ -38,7 +38,7 @@ public class PerformanceStatView {
     }
 
     public void updateValue(double value, RecentPerformanceView.DataType type) {
-        _performanceGraphView.addData((System.currentTimeMillis() - _initialTime) / 1000, value, type);
+        _performanceGraphView.addData((double) (System.currentTimeMillis() - _initialTime) / 1000, value, type);
         _value.setText(_numberFormat.format(value));
     }
 }

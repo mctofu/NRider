@@ -3,7 +3,7 @@ package nrider.core;
 import java.text.NumberFormat;
 
 public class RideLoad {
-    private static NumberFormat INT_FORMAT = NumberFormat.getIntegerInstance();
+    private static final NumberFormat INT_FORMAT = NumberFormat.getIntegerInstance();
 
     public enum Type {
         PERCENT_THRESHOLD {
@@ -25,7 +25,7 @@ public class RideLoad {
         public abstract String format(double value);
     }
 
-    private Type _type;
+    private final Type _type;
     private double _value;
 
     public RideLoad(Type type, double value) {

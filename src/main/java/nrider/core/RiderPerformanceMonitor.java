@@ -6,7 +6,7 @@ import nrider.io.PerformanceData;
 import java.util.HashMap;
 
 public class RiderPerformanceMonitor implements IPerformanceDataListener {
-    private final float MIN_SPEED = 16.5f;
+    private static final float MIN_SPEED = 16.5f;
 
     private final WorkoutSession _workout;
     private final HashMap<String, RiderMonitor> _riderMap = new HashMap<>();
@@ -98,10 +98,10 @@ public class RiderPerformanceMonitor implements IPerformanceDataListener {
         _active = false;
     }
 
-    class RiderMonitor {
-        private AlertMonitor _isUnderSpeed = new AlertMonitor(3, 3);
-        private AlertMonitor _isOverSpeed = new AlertMonitor(3, 3);
-        private AlertMonitor _isAssisted = new AlertMonitor(2, 4);
+    static class RiderMonitor {
+        private final AlertMonitor _isUnderSpeed = new AlertMonitor(3, 3);
+        private final AlertMonitor _isOverSpeed = new AlertMonitor(3, 3);
+        private final AlertMonitor _isAssisted = new AlertMonitor(2, 4);
         private double _lastSpeed;
 
         public AlertMonitor getUnderSpeed() {
@@ -125,10 +125,10 @@ public class RiderPerformanceMonitor implements IPerformanceDataListener {
         }
     }
 
-    class AlertMonitor {
-        private int _thresholdSet;
+    static class AlertMonitor {
+        private final int _thresholdSet;
+        private final int _thresholdReset;
         private int _currentSet;
-        private int _thresholdReset;
         private int _currentReset;
         private boolean _alarmActive;
 

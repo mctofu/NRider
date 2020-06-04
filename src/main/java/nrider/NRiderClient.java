@@ -23,7 +23,7 @@ import java.util.HashSet;
  */
 public class NRiderClient implements IPerformanceDataListener, IWorkoutListener {
     private static final String MAIN_REF_TEXT = "Calibration__";
-    private static Font DEFAULT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 30);
+    private static final Font DEFAULT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 30);
 
     private JFrame _window;
     private RiderListView _riderListView;
@@ -32,11 +32,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     private JLabel _rideTime;
 
     public void start() {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                init();
-            }
-        });
+        SwingUtilities.invokeLater(this::init);
     }
 
     private void init() {
@@ -80,44 +76,26 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     }
 
     public void handleRideLoaded(final IRide ride) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                _rideScriptView.setRideScript(ride.getScript());
-            }
-        });
+        SwingUtilities.invokeLater(() -> _rideScriptView.setRideScript(ride.getScript()));
     }
 
     public void handlePerformanceData(final String identifier, final PerformanceData data) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                _riderListView.handlePerformanceData(identifier, data);
-            }
-        });
+        SwingUtilities.invokeLater(() -> _riderListView.handlePerformanceData(identifier, data));
     }
 
     public void handleLoadAdjust(final String riderId, final RideLoad newLoad) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                _workoutLoad.setText("Workout Load:" + newLoad.toString());
-            }
-        });
+        SwingUtilities.invokeLater(() -> _workoutLoad.setText("Workout Load:" + newLoad.toString()));
     }
 
     public void handleAddRider(final Rider rider) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                _riderListView.addRider(rider);
-                _window.getRootPane().revalidate();
-            }
+        SwingUtilities.invokeLater(() -> {
+            _riderListView.addRider(rider);
+            _window.getRootPane().revalidate();
         });
     }
 
     public void handleRiderThresholdAdjust(final String identifier, final double newThreshold) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                _riderListView.handleRiderThresholdAdjust(identifier, newThreshold);
-            }
-        });
+        SwingUtilities.invokeLater(() -> _riderListView.handleRiderThresholdAdjust(identifier, newThreshold));
     }
 
     private void setRideTime(long time) {
@@ -131,11 +109,9 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     }
 
     public void handleRideTimeUpdate(final long rideTime) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                setRideTime(rideTime);
-                _rideScriptView.setRideTime(rideTime);
-            }
+        SwingUtilities.invokeLater(() -> {
+            setRideTime(rideTime);
+            _rideScriptView.setRideTime(rideTime);
         });
     }
 
@@ -144,19 +120,11 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     }
 
     public void handleAddRiderAlert(final String identifier, final WorkoutSession.RiderAlertType alert) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                _riderListView.handleAddRiderAlert(identifier, alert);
-            }
-        });
+        SwingUtilities.invokeLater(() -> _riderListView.handleAddRiderAlert(identifier, alert));
     }
 
     public void handleRemoveRiderAlert(final String identifier, final WorkoutSession.RiderAlertType alert) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                _riderListView.handleRemoveRiderAlert(identifier, alert);
-            }
-        });
+        SwingUtilities.invokeLater(() -> _riderListView.handleRemoveRiderAlert(identifier, alert));
     }
 
     private JLabel createLabel(String text, String refText) {
@@ -171,18 +139,18 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     }
 
     class RiderListView {
-        private Container _container = new JPanel(new GridBagLayout());
-        private HashMap<String, RiderView> _riderMap = new HashMap<>();
-        private JLabel _riderName;
-        private JLabel _threshold;
-        private JLabel _alert;
-        private JLabel _speed;
-        private JLabel _cadence;
-        private JLabel _power;
-        private JLabel _extHr;
-        private JLabel _extCadence;
-        private JLabel _extPower;
-        private JLabel _calibration;
+        private final Container _container = new JPanel(new GridBagLayout());
+        private final HashMap<String, RiderView> _riderMap = new HashMap<>();
+        private final JLabel _riderName;
+        private final JLabel _threshold;
+        private final JLabel _alert;
+        private final JLabel _speed;
+        private final JLabel _cadence;
+        private final JLabel _power;
+        private final JLabel _extHr;
+        private final JLabel _extCadence;
+        private final JLabel _extPower;
+        private final JLabel _calibration;
 
         public RiderListView() {
             GridBagConstraints c = new GridBagConstraints();
@@ -287,19 +255,19 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     }
 
     class RiderView {
-        private Container _container;
-        private JLabel _name;
-        private PerformanceStatView _speed;
-        private PerformanceStatView _cadence;
-        private PerformanceStatView _power;
-        private JLabel _riderThreshold;
-        private PerformanceStatView _extHeartRate;
-        private PerformanceStatView _extCadence;
-        private PerformanceStatView _extPower;
-        private JLabel _calibration;
-        private JLabel _alert;
-        private HashSet<WorkoutSession.RiderAlertType> _alerts = new HashSet<>();
-        private Rider _rider;
+        private final Container _container;
+        private final JLabel _name;
+        private final PerformanceStatView _speed;
+        private final PerformanceStatView _cadence;
+        private final PerformanceStatView _power;
+        private final JLabel _riderThreshold;
+        private final PerformanceStatView _extHeartRate;
+        private final PerformanceStatView _extCadence;
+        private final PerformanceStatView _extPower;
+        private final JLabel _calibration;
+        private final JLabel _alert;
+        private final HashSet<WorkoutSession.RiderAlertType> _alerts = new HashSet<>();
+        private final Rider _rider;
 
         public RiderView(Rider rider, Container container, int columnNumber) {
             _container = container;
@@ -378,10 +346,6 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
             _container.add(perf.getGraph(), c);
             c.gridx = gridX;
             c.weightx = weightx;
-        }
-
-        public Container getContainer() {
-            return _container;
         }
 
         public void setSpeed(float speed) {

@@ -8,23 +8,19 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class NRiderConsole {
-    private CommandInterpreter _interpreter = new CommandInterpreter();
+    private final CommandInterpreter _interpreter = new CommandInterpreter();
 
     public void runScript(String scriptFilePath) throws IOException {
         System.out.println("Run script " + scriptFilePath);
-        BufferedReader reader = new BufferedReader(new FileReader(scriptFilePath));
-        try {
-            String line;
-            while ((line = reader.readLine()) != null) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(scriptFilePath))) {
+            reader.lines().forEach(line -> {
                 System.out.println(line);
                 processLine(line);
-            }
-        } finally {
-            reader.close();
+            });
         }
     }
 
-    public void start() throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+    public void start() throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
         while (true) {

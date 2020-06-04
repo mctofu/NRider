@@ -6,7 +6,7 @@ import java.util.List;
 public class Rider {
     private String _name;
     private int _thresholdPower;
-    private List<String> _devices = new ArrayList<>();
+    private final List<String> _devices = new ArrayList<>();
 
     public String getIdentifier() {
         return getName();
