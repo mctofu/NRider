@@ -61,7 +61,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         content.add(_workoutLoad, c);
 
         c.gridy = 2;
-        c.weighty = .2;
+        c.weighty = .3;
         c.anchor = GridBagConstraints.CENTER;
         _rideScriptView = new RideScriptView();
         content.add(_rideScriptView, c);
@@ -69,7 +69,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         c.gridy = 3;
         c.anchor = GridBagConstraints.SOUTH;
         c.weighty = .6;
-        c.insets = new Insets(50, 50, 50, 50);
+        c.insets = new Insets(50, 75, 75, 75);
         _riderListView = new RiderListView();
         content.add(_riderListView.getContainer(), c);
         _window.setVisible(true);
@@ -328,7 +328,8 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
             _extPower.setVisible(false);
             addPerformanceStatView(_extPower, c);
 
-            _calibration = createLabel("", PerformanceStatView.METRIC_REF_TEXT, false);
+            _calibration = createLabel("", MAIN_REF_TEXT, false);
+            _calibration.setHorizontalAlignment(SwingConstants.CENTER);
             c.gridy = 9;
             c.gridwidth = 2;
             _container.add(_calibration, c);
