@@ -1,7 +1,5 @@
 package nrider.io;
 
-import java.util.EventListener;
-
-public interface IPerformanceDataListener extends EventListener {
+public interface IPerformanceDataListener {
     void handlePerformanceData(String identifier, PerformanceData data);
 }
