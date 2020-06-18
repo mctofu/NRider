@@ -94,8 +94,6 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
                 .forEachRemaining(d -> {
                     String id = _id + ":" + d.getDeviceId();
 
-                    checkDevice(id, d.getDeviceId());
-
                     if (d.hasPerformanceData()) {
                         Sport.PerformanceData pd = d.getPerformanceData();
                         switch (pd.getType()) {
@@ -106,6 +104,8 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
                                 _performancePublisher.setSpeed(id, (float) pd.getValue());
                                 break;
                             case PERFORMANCE_TYPE_CALIBRATION:
+                                // TODO: should get some sort of capabilities info from sport-grpc?
+                                checkDevice(id, d.getDeviceId());
                                 _performancePublisher.setCalibration(id, (float) pd.getValue());
                                 break;
                             case PERFORMANCE_TYPE_HEART_RATE:
