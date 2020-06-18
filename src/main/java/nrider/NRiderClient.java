@@ -147,6 +147,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         private final JLabel _speed;
         private final JLabel _cadence;
         private final JLabel _power;
+        private final JLabel _hr;
         private final JLabel _extHr;
         private final JLabel _extCadence;
         private final JLabel _extPower;
@@ -183,20 +184,24 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
             c.gridy = 5;
             _container.add(_power, c);
 
-            _extHr = createLabel("Ext HR", MAIN_REF_TEXT, false);
+            _hr = createLabel("HR", MAIN_REF_TEXT, false);
             c.gridy = 6;
+            _container.add(_hr, c);
+
+            _extHr = createLabel("Ext HR", MAIN_REF_TEXT, false);
+            c.gridy = 7;
             _container.add(_extHr, c);
 
             _extCadence = createLabel("Ext Cadence", MAIN_REF_TEXT, false);
-            c.gridy = 7;
+            c.gridy = 8;
             _container.add(_extCadence, c);
 
             _extPower = createLabel("Ext Power", MAIN_REF_TEXT, false);
-            c.gridy = 8;
+            c.gridy = 9;
             _container.add(_extPower, c);
 
             _calibration = createLabel("Calibration", MAIN_REF_TEXT);
-            c.gridy = 9;
+            c.gridy = 10;
             _container.add(_calibration, c);
         }
 
@@ -222,6 +227,10 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
                 case SPEED:
                     // convert m/s to mph
                     riderView.setSpeed((float) (data.getValue() * 2.237));
+                    break;
+                case HEART_RATE:
+                    _hr.setVisible(true);
+                    riderView.setHeartRate(data.getValue());
                     break;
                 case EXT_HEART_RATE:
                     _extHr.setVisible(true);
@@ -261,6 +270,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         private final PerformanceStatView _cadence;
         private final PerformanceStatView _power;
         private final JLabel _riderThreshold;
+        private final PerformanceStatView _heartRate;
         private final PerformanceStatView _extHeartRate;
         private final PerformanceStatView _extCadence;
         private final PerformanceStatView _extPower;
@@ -313,24 +323,29 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
             c.gridy = 5;
             addPerformanceStatView(_power, c);
 
-            _extHeartRate = new PerformanceStatView(50, 220, 60, new DecimalFormat("0"));
+            _heartRate = new PerformanceStatView(50, 220, 60, new DecimalFormat("0"));
             c.gridy = 6;
+            _heartRate.setVisible(false);
+            addPerformanceStatView(_heartRate, c);
+
+            _extHeartRate = new PerformanceStatView(50, 220, 60, new DecimalFormat("0"));
+            c.gridy = 7;
             _extHeartRate.setVisible(false);
             addPerformanceStatView(_extHeartRate, c);
 
             _extCadence = new PerformanceStatView(45, 130, 60, new DecimalFormat("0"));
-            c.gridy = 7;
+            c.gridy = 8;
             _extCadence.setVisible(false);
             addPerformanceStatView(_extCadence, c);
 
             _extPower = new PerformanceStatView(0, rider.getThresholdPower() * 1.1, 60, new DecimalFormat("0"));
-            c.gridy = 8;
+            c.gridy = 9;
             _extPower.setVisible(false);
             addPerformanceStatView(_extPower, c);
 
             _calibration = createLabel("", MAIN_REF_TEXT, false);
             _calibration.setHorizontalAlignment(SwingConstants.CENTER);
-            c.gridy = 9;
+            c.gridy = 10;
             c.gridwidth = 2;
             _container.add(_calibration, c);
 
@@ -380,6 +395,11 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
 
         public void setThreshold(double threshold) {
             _riderThreshold.setText(new DecimalFormat("0").format(threshold));
+        }
+
+        public void setHeartRate(float hr) {
+            _heartRate.setVisible(true);
+            _heartRate.updateValue(hr, RecentPerformanceView.DataType.NORMAL);
         }
 
         public void setExtHeartRate(float hr) {
