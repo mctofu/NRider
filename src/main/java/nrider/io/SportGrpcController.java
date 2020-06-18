@@ -109,7 +109,7 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
                                 _performancePublisher.setCalibration(id, (float) pd.getValue());
                                 break;
                             case PERFORMANCE_TYPE_HEART_RATE:
-                                _performancePublisher.setExtHeartRate(id, (float) pd.getValue());
+                                _performancePublisher.setHeartRate(id, (float) pd.getValue());
                                 break;
                             case PERFORMANCE_TYPE_CADENCE:
                                 _performancePublisher.setCadence(id, (float) pd.getValue());

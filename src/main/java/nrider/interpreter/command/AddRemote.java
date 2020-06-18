@@ -30,7 +30,7 @@ public class AddRemote extends BaseCommand
 
         if (args.length > 2)
         {
-            session.associateRider( args[2], remote.getIdentifier() );
+            session.associateRider(args[2], remote.getIdentifier(), false);
         }
 
         return "Added " + remote.getIdentifier();

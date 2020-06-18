@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -56,7 +57,9 @@ public class WorkoutSession implements
     private final List<IWorkoutController> _controllers = new ArrayList<>();
     private final Map<String, RiderSession> _deviceMap = new HashMap<>();
     private final Map<String, RiderSession> _riderMap = new HashMap<>();
-    private final HashSet<String> _unmappedIdentifiers = new HashSet<>();
+    private final Set<String> _unmappedIdentifiers = new HashSet<>();
+    private final Set<String> _extMetricDevices = new HashSet<>();
+
 
     private final EventPublisher<IPerformanceDataListener> _netPerformancePublisher =
             EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
@@ -178,11 +181,14 @@ public class WorkoutSession implements
         }
     }
 
-    public void associateRider(String riderId, String identifier) {
+    public void associateRider(String riderId, String identifier, boolean extMetrics) {
         synchronized (_riders) {
             RiderSession session = _riderMap.get(riderId);
             session.addAssociation(identifier);
             _deviceMap.put(identifier, session);
+            if (extMetrics) {
+                _extMetricDevices.add(identifier);
+            }
             _unmappedIdentifiers.remove(identifier);
         }
     }
@@ -284,8 +290,10 @@ public class WorkoutSession implements
         synchronized (_riders) {
             if (_deviceMap.containsKey(identifier)) {
                 final RiderSession rs = _deviceMap.get(identifier);
+                final PerformanceData publishData = _extMetricDevices.contains(identifier) ?
+                        extAdjust(data) : data;
                 getPublisher(rs).publishEvent(
-                        target -> target.handlePerformanceData(rs.getRider().getIdentifier(), data));
+                        target -> target.handlePerformanceData(rs.getRider().getIdentifier(), publishData));
             } else {
                 _unmappedIdentifiers.add(identifier);
                 _unmappedPerformancePublisher.publishEvent(
@@ -293,6 +301,29 @@ public class WorkoutSession implements
 
             }
         }
+    }
+
+    private PerformanceData extAdjust(PerformanceData data) {
+        PerformanceData adjusted = new PerformanceData();
+        adjusted.setValue(data.getValue());
+        adjusted.setTimeStamp(data.getTimeStamp());
+
+        switch(data.getType()) {
+            case POWER:
+                adjusted.setType(PerformanceData.Type.EXT_POWER);
+                break;
+            case CADENCE:
+                adjusted.setType(PerformanceData.Type.EXT_CADENCE);
+                break;
+            case HEART_RATE:
+                adjusted.setType(PerformanceData.Type.EXT_HEART_RATE);
+                break;
+            default:
+                adjusted.setType(data.getType());
+                break;
+        }
+
+        return adjusted;
     }
 
     public String[] getUnmappedIdentifiers() {

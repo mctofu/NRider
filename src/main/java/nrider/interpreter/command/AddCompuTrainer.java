@@ -31,7 +31,7 @@ public class AddCompuTrainer extends BaseCommand {
         compuTrainer.addControlDataListener(session);
 
         if (args.length > 2) {
-            session.associateRider(args[2], compuTrainer.getIdentifier());
+            session.associateRider(args[2], compuTrainer.getIdentifier(), false);
         }
 
         return "Added " + compuTrainer.getIdentifier();
