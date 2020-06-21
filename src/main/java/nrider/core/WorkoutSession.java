@@ -9,7 +9,6 @@ import nrider.io.IWorkoutController;
 import nrider.io.PerformanceData;
 import nrider.media.IMediaEventListener;
 import nrider.media.MediaEvent;
-import nrider.net.NetSource;
 import nrider.ride.IRide;
 import org.apache.log4j.Logger;
 
@@ -471,12 +470,4 @@ public class WorkoutSession implements
         }
         return null;
     }
-
-
-    public void setNetSource(NetSource netSource) {
-        addPerformanceDataListener(netSource);
-        addPerformanceDataSource(netSource);
-        addWorkoutListener(netSource);
-    }
-
 }
