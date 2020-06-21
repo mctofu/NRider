@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.jar.JarFile;
 
 public class CommandInterpreter {
-    private HashMap<String, ICommand> _commandMap = new HashMap<>();
+    private final HashMap<String, ICommand> _commandMap = new HashMap<>();
 
     public CommandInterpreter() {
         // autoload all classes in the nrider.interpreter.command package
@@ -113,7 +113,7 @@ public class CommandInterpreter {
             Enumeration files = null;
             JarFile module = null;
             // for each classpath ...
-            File classPath = new File((URL.class).isInstance(classPaths[h]) ?
+            File classPath = new File(classPaths[h] instanceof URL ?
                     URLDecoder.decode(((URL) classPaths[h]).getFile()) : classPaths[h].toString());
             if (classPath.isDirectory() && jarFilter == null) {   // is our classpath a directory and jar filters are not active?
                 List<String> dirListing = new ArrayList<>();

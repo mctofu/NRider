@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class DebugAppender extends AppenderSkeleton {
     private JFrame _window;
     private JTextArea _text;
-    private AtomicBoolean _init = new AtomicBoolean(false);
+    private final AtomicBoolean _init = new AtomicBoolean(false);
 
     public DebugAppender() {
 

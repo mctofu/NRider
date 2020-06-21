@@ -3,7 +3,7 @@ package nrider.interpreter;
 public abstract class BaseCommand implements ICommand {
     public String getName() {
         String name = this.getClass().getSimpleName();
-        return name.substring(0, 1).toLowerCase() + name.substring(1, name.length());
+        return name.substring(0, 1).toLowerCase() + name.substring(1);
     }
 
     public abstract String run(String[] args) throws Exception;

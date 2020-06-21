@@ -7,11 +7,11 @@ import java.util.HashMap;
 
 public class PerformanceDataChangePublisher implements IPerformanceDataSource {
     private String _identifier;
-    private EventPublisher<IPerformanceDataListener> _performancePublisher = EventPublisher.directPublisher();
+    private final EventPublisher<IPerformanceDataListener> _performancePublisher = EventPublisher.directPublisher();
     private long _lastSpeedUpdateTime;
 
-    private HashMap<PerformanceData.Type, Float> _lastValue = new HashMap<>();
-    private HashMap<PerformanceData.Type, Long> _lastSent = new HashMap<>();
+    private final HashMap<PerformanceData.Type, Float> _lastValue = new HashMap<>();
+    private final HashMap<PerformanceData.Type, Long> _lastSent = new HashMap<>();
 
     public PerformanceDataChangePublisher(String identifier) {
         _identifier = identifier;

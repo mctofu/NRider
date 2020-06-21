@@ -10,12 +10,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class SimController implements IWorkoutController, IPerformanceDataSource, IControlDataSource {
-    private String _identifier;
+    private final String _identifier;
     private double _load;
     private TrainerMode _trainerMode;
     private boolean _active;
-    private EventPublisher<IPerformanceDataListener> _performancePublisher = EventPublisher.directPublisher();
-    private Timer _timer = new Timer();
+    private final EventPublisher<IPerformanceDataListener> _performancePublisher = EventPublisher.directPublisher();
+    private final Timer _timer = new Timer();
 
     public SimController(String identifier) {
         _identifier = identifier;
@@ -78,7 +78,7 @@ public class SimController implements IWorkoutController, IPerformanceDataSource
 
     class DataOutputTask extends TimerTask {
         private double _currentPower;
-        private double _currentSpeed = 21 / 2.237;
+        private final double _currentSpeed = 21 / 2.237;
 
 
         @Override

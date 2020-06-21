@@ -6,7 +6,7 @@ import java.util.*;
 
 public abstract class BaseLogger {
 
-    private LinkedList<PerformanceData> _data = new LinkedList<>();
+    private final LinkedList<PerformanceData> _data = new LinkedList<>();
 
     public void logData(PerformanceData data) {
         _data.add(data);

@@ -11,7 +11,7 @@ import java.util.HashMap;
 
 
 public class TxtLogger extends BaseLogger {
-    private String _id;
+    private final String _id;
 
     public TxtLogger(String id) {
         _id = id;

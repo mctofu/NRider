@@ -7,10 +7,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class EventPublisher<T> implements IEventPublisher<T> {
-    private List<T> _listeners = new ArrayList<>();
-    private static HashMap<String, Executor> _executorMap = new HashMap<>();
+    private final List<T> _listeners = new ArrayList<>();
+    private static final HashMap<String, Executor> _executorMap = new HashMap<>();
 
-    private Executor _executor;
+    private final Executor _executor;
 
     public EventPublisher(Executor executor) {
         _executor = executor;

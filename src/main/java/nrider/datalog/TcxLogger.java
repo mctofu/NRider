@@ -21,7 +21,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 
 public class TcxLogger extends BaseLogger {
-    private String _id;
+    private final String _id;
 
     public TcxLogger(String id) {
         _id = id;

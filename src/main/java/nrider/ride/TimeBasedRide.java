@@ -12,7 +12,7 @@ public class TimeBasedRide implements IRide {
     private Date _startTime;
     private int _elapsed;
     private Status _status;
-    private RideScript _timeline;
+    private final RideScript _timeline;
 
     public TimeBasedRide(RideScript timeline) {
         _timeline = timeline;
@@ -73,7 +73,7 @@ public class TimeBasedRide implements IRide {
     }
 
     public class LoadTask extends TimerTask {
-        private RideLoad _load;
+        private final RideLoad _load;
 
         public LoadTask(RideLoad load) {
             _load = load;

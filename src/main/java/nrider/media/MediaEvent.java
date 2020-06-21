@@ -5,10 +5,10 @@ public class MediaEvent {
         LOAD, PLAY, PAUSE, SEEK, STOP
     }
 
-    private Type _type;
-    private String _media;
-    private int _position;
-    private String _value;
+    private final Type _type;
+    private final String _media;
+    private final int _position;
+    private final String _value;
 
     public MediaEvent(Type type, String media, int position, String value) {
         _type = type;

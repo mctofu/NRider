@@ -11,7 +11,7 @@ public class RiderEditor implements ActionListener {
     private JFrame _window;
     private JTextField _id;
     private JTextField _threshold;
-    private RiderManager _riderManager;
+    private final RiderManager _riderManager;
 
     public RiderEditor(RiderManager riderManager) {
         _riderManager = riderManager;

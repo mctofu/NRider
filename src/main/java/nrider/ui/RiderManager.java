@@ -12,8 +12,8 @@ import java.awt.event.ActionListener;
 public class RiderManager implements ActionListener {
     private JFrame _window;
     private JComboBox<String> _allRiders;
-    private DefaultComboBoxModel<String> _allRiderModel = new DefaultComboBoxModel<>();
-    private IRiderDb _riderDb = new FileRiderDb();
+    private final DefaultComboBoxModel<String> _allRiderModel = new DefaultComboBoxModel<>();
+    private final IRiderDb _riderDb = new FileRiderDb();
 
     public void start() {
         SwingUtilities.invokeLater(new Runnable() {

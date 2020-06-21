@@ -6,7 +6,7 @@ package nrider.io;
 public class ControlData {
     public enum Type {STOP, START, F2, F3, PLUS, MINUS}
 
-    private Type _type;
+    private final Type _type;
 
     public ControlData(Type type) {
         _type = type;

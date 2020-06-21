@@ -17,15 +17,15 @@ import java.util.Map;
  * Simple UI for mapping devices to users
  */
 public class DeviceMapper implements IPerformanceDataListener {
-    private static Font _bigAFont = new Font(Font.SANS_SERIF, Font.PLAIN, 30);
+    private static final Font _bigAFont = new Font(Font.SANS_SERIF, Font.PLAIN, 30);
     private JFrame _window;
     private JList<String> _riders;
     private JList<DeviceEntry> _devices;
-    private DefaultListModel<String> _riderModel = new DefaultListModel<>();
-    private DefaultListModel<DeviceEntry> _deviceModel = new DefaultListModel<>();
+    private final DefaultListModel<String> _riderModel = new DefaultListModel<>();
+    private final DefaultListModel<DeviceEntry> _deviceModel = new DefaultListModel<>();
     private JButton _mapButton;
-    private HashMap<String, HashMap<PerformanceData.Type, PerformanceData>> _unmappedData = new HashMap<String, HashMap<PerformanceData.Type, PerformanceData>>();
-    private HashSet<String> _mappedData = new HashSet<String>();
+    private final HashMap<String, HashMap<PerformanceData.Type, PerformanceData>> _unmappedData = new HashMap<String, HashMap<PerformanceData.Type, PerformanceData>>();
+    private final HashSet<String> _mappedData = new HashSet<String>();
 
     public void start() {
         SwingUtilities.invokeLater(new Runnable() {

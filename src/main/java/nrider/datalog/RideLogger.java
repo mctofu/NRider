@@ -11,7 +11,7 @@ import nrider.ride.IRide;
 import java.util.HashMap;
 
 public class RideLogger implements IPerformanceDataListener, IWorkoutListener {
-    private HashMap<String, BaseLogger> _loggers = new HashMap<>();
+    private final HashMap<String, BaseLogger> _loggers = new HashMap<>();
     private volatile boolean _logging = false;
 
     public void handlePerformanceData(String identifier, PerformanceData data) {
