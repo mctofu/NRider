@@ -4,7 +4,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import nrider.event.EventPublisher;
-import nrider.monitor.IMonitorable;
 import org.apache.log4j.Logger;
 import sportgrpc.ControllerGrpc;
 import sportgrpc.Sport;
@@ -18,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Connects to a sport-grpc service which can provide access to multiple workout controllers or data sources.
  */
-public class SportGrpcController implements IPerformanceDataSource, IControlDataSource, IWorkoutController, IMonitorable {
+public class SportGrpcController implements IPerformanceDataSource, IControlDataSource, IWorkoutController {
     private final static Logger LOG = Logger.getLogger(SportGrpcController.class);
 
     private final String _id;
@@ -180,11 +179,6 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
     @Override
     public void addPerformanceDataListener(IPerformanceDataListener listener) {
         _performancePublisher.addPerformanceDataListener(listener);
-    }
-
-    @Override
-    public void monitorCheck() {
-
     }
 
     private static class WorkoutController implements IWorkoutController {

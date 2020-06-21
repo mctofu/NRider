@@ -6,7 +6,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import nrider.event.EventPublisher;
-import nrider.monitor.IMonitorable;
 import org.apache.log4j.Logger;
 
 import java.util.Iterator;
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Connects to a controller service implementing the grpc Controller service
  */
-public class RemoteController implements IPerformanceDataSource, IControlDataSource, IWorkoutController, IMonitorable {
+public class RemoteController implements IPerformanceDataSource, IControlDataSource, IWorkoutController {
     private final static Logger LOG = Logger.getLogger(RemoteController.class);
 
     private final String _id;
@@ -159,10 +158,5 @@ public class RemoteController implements IPerformanceDataSource, IControlDataSou
     @Override
     public void addPerformanceDataListener(IPerformanceDataListener listener) {
         _performancePublisher.addPerformanceDataListener(listener);
-    }
-
-    @Override
-    public void monitorCheck() {
-
     }
 }
