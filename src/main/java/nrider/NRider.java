@@ -1,11 +1,9 @@
 package nrider;
 
 import nrider.core.WorkoutSession;
-import org.apache.log4j.xml.DOMConfigurator;
 
 public class NRider {
     public void start(String[] args) {
-        DOMConfigurator.configure("logConfig.xml");
         NRiderClient client = new NRiderClient();
         try {
             client.start();
