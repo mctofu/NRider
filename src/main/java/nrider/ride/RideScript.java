@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class RideScript implements Iterable<RideEvent> {
-    private List<RideEvent> _script = new ArrayList<RideEvent>();
+    private List<RideEvent> _script = new ArrayList<>();
     private double _maxLoad;
     private long _period;
 
@@ -54,7 +54,7 @@ public class RideScript implements Iterable<RideEvent> {
 
     public void crop(long start, long end) {
         _period = 0;
-        List<RideEvent> newScript = new ArrayList<RideEvent>();
+        List<RideEvent> newScript = new ArrayList<>();
 
         RideEvent prev = null;
         for (RideEvent re : _script) {
@@ -84,8 +84,7 @@ public class RideScript implements Iterable<RideEvent> {
     public void append(RideScript script) {
         long prevPeriod = _period;
 
-        List<RideEvent> newScript = new ArrayList<RideEvent>();
-        newScript.addAll(_script);
+        List<RideEvent> newScript = new ArrayList<>(_script);
 
         for (RideEvent re : script) {
             long newPosition = re.getPosition() + prevPeriod;
@@ -112,6 +111,7 @@ public class RideScript implements Iterable<RideEvent> {
         return null;
     }
 
+    @Override
     public Iterator<RideEvent> iterator() {
         return _script.iterator();
     }

@@ -28,10 +28,6 @@ public class MultiDevicePerformancePublisher {
         getPublisher(deviceId).setHeartRate(heartRate);
     }
 
-    public void setExtHeartRate(String deviceId, float heartRate) {
-        getPublisher(deviceId).setExtHeartRate(heartRate);
-    }
-
     public void setCalibration(String deviceId, float calibration) {
         getPublisher(deviceId).setCalibration(calibration);
     }

@@ -12,8 +12,7 @@ public class RideLoader {
     public IRide loadRide(String path) throws IOException {
         RideScript script = new RideScript();
 
-        BufferedReader reader = new BufferedReader(new FileReader(path));
-        try {
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
             String line;
             boolean atData = false;
             long lastTime = 0;
@@ -45,7 +44,7 @@ public class RideLoader {
                             // we will adjust the load every 500 ms
 
                             int steps = (int) period / 500;
-                            double loadChangePerStep = (load - lastLoad) / steps;
+                            double loadChangePerStep = (load - lastLoad) / (double) steps;
 
                             if (Math.abs(load - lastLoad) > 10 || loadChangePerStep > 1) {
                                 for (int i = 1; i < steps; i++) {
@@ -60,8 +59,6 @@ public class RideLoader {
                     lastLoad = load;
                 }
             }
-        } finally {
-            reader.close();
         }
 
         return new TimeBasedRide(script);

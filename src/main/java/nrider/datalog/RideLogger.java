@@ -17,7 +17,6 @@ public class RideLogger implements IPerformanceDataListener, IWorkoutListener {
     public void handlePerformanceData(String identifier, PerformanceData data) {
         BaseLogger logger;
 
-
         synchronized (_loggers) {
             logger = _loggers.get(identifier);
             if (logger == null) {

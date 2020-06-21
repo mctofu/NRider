@@ -232,7 +232,7 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
         }
 
         @Override
-        public void disconnect() throws IOException {
+        public void disconnect() {
 
         }
 
@@ -242,7 +242,7 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
 
         }
     }

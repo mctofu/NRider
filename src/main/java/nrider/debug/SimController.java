@@ -1,10 +1,8 @@
 package nrider.debug;
 
 import nrider.event.EventPublisher;
-import nrider.event.IEvent;
 import nrider.io.*;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -46,7 +44,7 @@ public class SimController implements IWorkoutController, IPerformanceDataSource
         return _trainerMode;
     }
 
-    public void disconnect() throws IOException {
+    public void disconnect() {
         _active = false;
     }
 
@@ -54,8 +52,9 @@ public class SimController implements IWorkoutController, IPerformanceDataSource
         _active = true;
     }
 
-    public void close() throws IOException {
+    public void close() {
         _active = false;
+        _timer.cancel();
     }
 
     public void addPerformanceDataListener(IPerformanceDataListener listener) {
@@ -68,17 +67,13 @@ public class SimController implements IWorkoutController, IPerformanceDataSource
 
     public void publishPerformanceData(final PerformanceData data) {
         _performancePublisher.publishEvent(
-                new IEvent<IPerformanceDataListener>() {
-                    public void trigger(IPerformanceDataListener target) {
-                        target.handlePerformanceData(getIdentifier(), data);
-                    }
-                }
+                t -> t.handlePerformanceData(getIdentifier(), data)
         );
     }
 
     class DataOutputTask extends TimerTask {
         private double _currentPower;
-        private final double _currentSpeed = 21 / 2.237;
+        private static final double _currentSpeed = 21 / 2.237;
 
 
         @Override

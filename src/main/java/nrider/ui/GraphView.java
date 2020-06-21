@@ -146,7 +146,7 @@ public class GraphView extends JComponent {
         Color currentColor = g.getColor();
         g.setColor(color);
 
-        int minY = y2 < y1 ? y1 : y2;
+        int minY = Math.max(y2, y1);
 
         if (x1 == x2) {
             g.drawLine(x1, minY, x1, bounds.height);
@@ -169,15 +169,10 @@ public class GraphView extends JComponent {
     }
 
 
-    public class GraphPoint {
+    public static class GraphPoint {
         double _x;
         double _y;
         Color _color;
-
-        public GraphPoint(double x, double y) {
-            _x = x;
-            _y = y;
-        }
 
         public GraphPoint(double x, double y, Color color) {
             _x = x;

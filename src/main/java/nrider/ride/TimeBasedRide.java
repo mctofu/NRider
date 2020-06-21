@@ -64,15 +64,7 @@ public class TimeBasedRide implements IRide {
         }
     }
 
-    public class CompleteTask extends TimerTask {
-        public void run() {
-            WorkoutSession session = WorkoutSession.instance();
-
-            session.setRideLoad(new RideLoad(RideLoad.Type.WATTS, 50));
-        }
-    }
-
-    public class LoadTask extends TimerTask {
+    public static class LoadTask extends TimerTask {
         private final RideLoad _load;
 
         public LoadTask(RideLoad load) {

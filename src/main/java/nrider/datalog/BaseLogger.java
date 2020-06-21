@@ -50,7 +50,7 @@ public abstract class BaseLogger {
                 trackStart = pd.getTimeStamp();
             }
             if (!trackValues.containsKey(pd.getType())) {
-                trackValues.put(pd.getType(), new ArrayList<Float>());
+                trackValues.put(pd.getType(), new ArrayList<>());
             }
             trackValues.get(pd.getType()).add(pd.getValue());
         }
@@ -90,7 +90,7 @@ public abstract class BaseLogger {
         }
     }
 
-    class LogEntry {
+    static class LogEntry {
         private long _timeStamp;
         private HashMap<PerformanceData.Type, Float> _values = new HashMap<>();
 

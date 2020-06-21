@@ -1,7 +1,6 @@
 package nrider.io;
 
 import nrider.event.EventPublisher;
-import nrider.event.IEvent;
 
 import java.util.HashMap;
 
@@ -35,7 +34,7 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource {
 
     public void setSpeed(float speed) {
         long time = System.currentTimeMillis();
-        float distance = speed / ((time - _lastSpeedUpdateTime) / 1000);
+        float distance = (float) (speed / (time - _lastSpeedUpdateTime) / 1000.0);
         _lastSpeedUpdateTime = time;
         sendUpdate(PerformanceData.Type.DISTANCE, distance, time);
         considerUpdate(PerformanceData.Type.SPEED, speed);
@@ -47,10 +46,6 @@ public class PerformanceDataChangePublisher implements IPerformanceDataSource {
 
     public void setHeartRate(float heartRate) {
         considerUpdate(PerformanceData.Type.HEART_RATE, heartRate);
-    }
-
-    public void setExtHeartRate(float heartRate) {
-        considerUpdate(PerformanceData.Type.EXT_HEART_RATE, heartRate);
     }
 
     public void setCalibration(float calibration) {

@@ -37,12 +37,6 @@ public class EventPublisher<T> implements IEventPublisher<T> {
         }
     }
 
-    public void removeListener(T listener) {
-        synchronized (_listeners) {
-            _listeners.remove(listener);
-        }
-    }
-
     public void publishEvent(final IEvent<T> event) {
         synchronized (_listeners) {
             for (final T listener : _listeners) {

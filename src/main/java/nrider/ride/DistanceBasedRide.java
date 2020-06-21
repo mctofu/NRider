@@ -9,8 +9,9 @@ import nrider.io.PerformanceData;
 import java.util.HashMap;
 
 public class DistanceBasedRide implements IRide, IPerformanceDataListener {
-    private final HashMap<String, RideSession> _rideSessionMap = new HashMap<String, RideSession>();
+    private final HashMap<String, RideSession> _rideSessionMap = new HashMap<>();
     private final RideScript _script;
+    private final Object _statusLock = new Object();
     private volatile Status _status;
 
     public DistanceBasedRide(RideScript script) {
@@ -23,7 +24,7 @@ public class DistanceBasedRide implements IRide, IPerformanceDataListener {
     }
 
     public void start() {
-        synchronized (_status) {
+        synchronized (_statusLock) {
             if (_status != Status.READY || _status != Status.PAUSED) {
                 return;
             }
@@ -44,7 +45,7 @@ public class DistanceBasedRide implements IRide, IPerformanceDataListener {
     }
 
     public Status getStatus() {
-        synchronized (_status) {
+        synchronized (_statusLock) {
             return _status;
         }
     }
@@ -72,7 +73,7 @@ public class DistanceBasedRide implements IRide, IPerformanceDataListener {
 
     public void handlePerformanceData(String identifier, PerformanceData data) {
         if (data.getType() == PerformanceData.Type.DISTANCE) {
-            synchronized (_status) {
+            synchronized (_statusLock) {
                 if (_status != Status.RUNNING) {
                     return;
                 }
@@ -87,7 +88,7 @@ public class DistanceBasedRide implements IRide, IPerformanceDataListener {
         return _script;
     }
 
-    class RideSession {
+    static class RideSession {
         private final String _riderId;
         private RideLoad _currentLoad;
         private float _distanceTotal;
