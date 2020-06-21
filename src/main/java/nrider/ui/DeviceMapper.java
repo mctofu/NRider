@@ -119,9 +119,8 @@ public class DeviceMapper implements IPerformanceDataListener {
     private class MapListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             String riderId = _riders.getSelectedValue();
-            if (riderId != null && _devices.getSelectedValues() != null) {
-                for (Object obj : _devices.getSelectedValues()) {
-                    DeviceEntry device = (DeviceEntry) obj;
+            if (riderId != null) {
+                for (DeviceEntry device : _devices.getSelectedValuesList()) {
                     WorkoutSession.instance().associateRider(riderId, device.getId(), false);
                     _mappedData.add(device.getId());
                     _deviceModel.removeElement(device);

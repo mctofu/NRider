@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.jar.JarFile;
 
@@ -19,7 +20,7 @@ public class CommandInterpreter {
             packageSet.add("nrider.interpreter.command");
             for (Set<Class> classes : findClasses(classLoader, null, packageSet, null).values()) {
                 for (Class c : classes) {
-                    ICommand command = (ICommand) c.newInstance();
+                    ICommand command = (ICommand) c.getDeclaredConstructor().newInstance();
                     _commandMap.put(command.getName(), command);
                 }
             }
@@ -114,7 +115,7 @@ public class CommandInterpreter {
             JarFile module = null;
             // for each classpath ...
             File classPath = new File(classPaths[h] instanceof URL ?
-                    URLDecoder.decode(((URL) classPaths[h]).getFile()) : classPaths[h].toString());
+                    URLDecoder.decode(((URL) classPaths[h]).getFile(), StandardCharsets.UTF_8) : classPaths[h].toString());
             if (classPath.isDirectory() && jarFilter == null) {   // is our classpath a directory and jar filters are not active?
                 List<String> dirListing = new ArrayList<>();
                 // get a recursive listing of this classpath
