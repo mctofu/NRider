@@ -2,7 +2,7 @@ package nrider.ride;
 
 import nrider.core.RideLoad;
 
-public class RideEvent implements Comparable {
+public class RideEvent {
     long _position;
     final RideLoad _load;
 
@@ -17,9 +17,5 @@ public class RideEvent implements Comparable {
 
     public RideLoad getLoad() {
         return _load;
-    }
-
-    public int compareTo(Object o) {
-        return ((Long) _position).compareTo((Long) o);
     }
 }

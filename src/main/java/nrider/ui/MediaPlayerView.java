@@ -28,7 +28,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
     private boolean _startedPlaying;
 
     public void launch() {
-        SwingUtilities.invokeLater(() -> init());
+        SwingUtilities.invokeLater(this::init);
     }
 
     private void init() {
