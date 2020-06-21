@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class SerialDevice implements SerialPortEventListener {
-    private final static Logger LOG = Logger.getLogger(ComputrainerController.class);
+    private final static Logger LOG = Logger.getLogger(SerialDevice.class);
     private String _commPortId;
     private SerialPort _serialPort;
     private static ArrayList<String> _commPortIdentifiers = new ArrayList<>();

@@ -17,7 +17,7 @@ public class AddSimulator extends BaseCommand {
         try {
             simTrainer.connect();
         } catch (Exception e) {
-            return "Error connecting to computrainer: " + e.getMessage();
+            return "Error connecting to simulator: " + e.getMessage();
         }
 
         WorkoutSession session = WorkoutSession.instance();

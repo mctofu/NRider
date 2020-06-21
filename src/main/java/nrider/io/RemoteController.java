@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
  * Connects to a controller service implementing the grpc Controller service
  */
 public class RemoteController implements IPerformanceDataSource, IControlDataSource, IWorkoutController, IMonitorable {
-    private final static Logger LOG = Logger.getLogger(ComputrainerController.class);
+    private final static Logger LOG = Logger.getLogger(RemoteController.class);
 
     private final String _id;
     private final String _target;

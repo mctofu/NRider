@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * Connects to a sport-grpc service which can provide access to multiple workout controllers or data sources.
  */
 public class SportGrpcController implements IPerformanceDataSource, IControlDataSource, IWorkoutController, IMonitorable {
-    private final static Logger LOG = Logger.getLogger(ComputrainerController.class);
+    private final static Logger LOG = Logger.getLogger(SportGrpcController.class);
 
     private final String _id;
     private final String _target;
