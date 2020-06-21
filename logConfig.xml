@@ -9,27 +9,6 @@
 		</layout>
 	</appender>
 
-	<appender name="ant debug file" class="org.apache.log4j.RollingFileAppender">
-		<param name="File" value="antdebug.log"/>
-		<param name="Threshold" value="DEBUG"/>
-		<param name="MaxFileSize" value="10MB"/>
-		<param name="MaxBackupIndex" value="3"/>
-		<layout class="org.apache.log4j.PatternLayout">
-			<param name="ConversionPattern" value="%d - %m%n" />
-		</layout>
-	</appender>
-
-	<appender name="ant debug" class="nrider.DebugAppender">
-		<layout class="org.apache.log4j.PatternLayout">
-			<param name="ConversionPattern" value="%-5p %c{1} - %m%n"/>
-		</layout>
-	</appender>
-
-	<logger name="nrider.io.ant" additivity="false">
-		<appender-ref ref="ant debug"/>
-		<!--<appender-ref ref="ant debug file"/>-->
-	</logger>
-
 	<root>
 		<priority value="info" />
 		<appender-ref ref="console" />
