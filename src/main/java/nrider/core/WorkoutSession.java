@@ -228,7 +228,7 @@ public class WorkoutSession implements
     public void pauseRide() {
         if (_ride != null) {
             synchronized (_ride) {
-                if (_ride != null && (_ride.getStatus() == IRide.Status.RUNNING || _ride.getStatus() == IRide.Status.PAUSED)) {
+                if (_ride.getStatus() == IRide.Status.RUNNING || _ride.getStatus() == IRide.Status.PAUSED) {
                     if (_ride.getStatus() == IRide.Status.PAUSED) {
                         _ride.stop();
                     } else {
