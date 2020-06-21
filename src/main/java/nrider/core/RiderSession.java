@@ -1,7 +1,6 @@
 package nrider.core;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class RiderSession {
@@ -10,7 +9,6 @@ public class RiderSession {
     private RideLoad _currentLoad;
     private final List<String> _associations = new ArrayList<>();
     private final String _source;
-    private final HashMap<String, String> _metadata = new HashMap<>();
 
     public RiderSession(Rider rider, String source) {
         _rider = rider;

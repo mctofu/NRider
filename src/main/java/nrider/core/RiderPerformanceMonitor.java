@@ -175,9 +175,5 @@ public class RiderPerformanceMonitor implements IPerformanceDataListener {
             }
             return false;
         }
-
-        public boolean isAlert() {
-            return _alarmActive;
-        }
     }
 }

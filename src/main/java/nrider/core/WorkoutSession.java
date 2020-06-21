@@ -60,11 +60,7 @@ public class WorkoutSession implements
     private final Set<String> _extMetricDevices = new HashSet<>();
 
 
-    private final EventPublisher<IPerformanceDataListener> _netPerformancePublisher =
-            EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
     private final EventPublisher<IPerformanceDataListener> _localPerformancePublisher =
-            EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
-    private final EventPublisher<IPerformanceDataListener> _unmappedPerformancePublisher =
             EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
     private final EventPublisher<IMediaEventListener> _mediaEventPublisher =
             EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
@@ -166,10 +162,6 @@ public class WorkoutSession implements
         }
     }
 
-    public void addPerformanceDataSource(IPerformanceDataSource source) {
-        source.addPerformanceDataListener(this);
-    }
-
     public List<IWorkoutController> getControllers() {
         synchronized (_controllers) {
             return Collections.unmodifiableList(_controllers);
@@ -263,19 +255,10 @@ public class WorkoutSession implements
     }
 
     /**
-     * subscribe to performance data from local and net riders
+     * subscribe to performance data from riders
      */
     public void addPerformanceDataListener(IPerformanceDataListener listener) {
-        _netPerformancePublisher.addListener(listener);
         _localPerformancePublisher.addListener(listener);
-    }
-
-    public void addUnmappedPerformanceDataListener(IPerformanceDataListener listener) {
-        _unmappedPerformancePublisher.addListener(listener);
-    }
-
-    public void removeUnmappedPerformanceDataListener(IPerformanceDataListener listener) {
-        _unmappedPerformancePublisher.removeListener(listener);
     }
 
     /**
@@ -291,9 +274,6 @@ public class WorkoutSession implements
                         target -> target.handlePerformanceData(rs.getRider().getIdentifier(), publishData));
             } else {
                 _unmappedIdentifiers.add(identifier);
-                _unmappedPerformancePublisher.publishEvent(
-                        target -> target.handlePerformanceData(identifier, data));
-
             }
         }
     }
@@ -338,10 +318,7 @@ public class WorkoutSession implements
     }
 
     private EventPublisher<IPerformanceDataListener> getPublisher(RiderSession session) {
-        if (session.getSource().equals("local")) {
-            return _localPerformancePublisher;
-        }
-        return _netPerformancePublisher;
+        return _localPerformancePublisher;
     }
 
     public void handleControlData(String identifier, ControlData data) {
