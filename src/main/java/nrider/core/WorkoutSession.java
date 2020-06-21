@@ -99,10 +99,6 @@ public class WorkoutSession implements
         addRider(rider, "local");
     }
 
-    public void addNetRider(final Rider rider, String source) {
-        addRider(rider, source);
-    }
-
     private void addRider(final Rider rider, String source) {
         synchronized (_riders) {
             _riders.add(rider);
