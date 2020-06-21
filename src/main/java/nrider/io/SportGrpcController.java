@@ -8,7 +8,6 @@ import org.apache.log4j.Logger;
 import sportgrpc.ControllerGrpc;
 import sportgrpc.Sport;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;

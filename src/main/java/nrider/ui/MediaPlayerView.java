@@ -24,7 +24,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
 
     private JFrame _window;
     private EmbeddedMediaPlayerComponent _mediaPlayerComponent;
-    private int _seekTo;
+    private long _seekTo;
     private boolean _startedPlaying;
 
     public void launch() {
@@ -66,7 +66,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
                 if (!_startedPlaying) {
                     _seekTo = me.getPosition() * 1000;
                 } else {
-                    _mediaPlayerComponent.mediaPlayer().controls().setTime(me.getPosition() * 1000);
+                    _mediaPlayerComponent.mediaPlayer().controls().setTime(me.getPosition() * 1000L);
                 }
                 break;
             case PAUSE:
@@ -124,7 +124,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
                 SwingUtilities.invokeLater(() -> {
                     _startedPlaying = true;
                     if (_seekTo > 0) {
-                        int seekTo = _seekTo;
+                        long seekTo = _seekTo;
                         _seekTo = 0;
                         mediaPlayer.controls().setTime(seekTo);
                     }

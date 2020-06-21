@@ -48,7 +48,7 @@ public class RideLoader {
 
                             if (Math.abs(load - lastLoad) > 10 || loadChangePerStep > 1) {
                                 for (int i = 1; i < steps; i++) {
-                                    script.addEvent(new RideEvent(lastTime + 500 * i, new RideLoad(loadType, lastLoad + i * loadChangePerStep)));
+                                    script.addEvent(new RideEvent(lastTime + 500L * i, new RideLoad(loadType, lastLoad + i * loadChangePerStep)));
                                 }
                             }
                             // schedule peak slightly early so it won't collide with the next entry if there is an instantaneous change

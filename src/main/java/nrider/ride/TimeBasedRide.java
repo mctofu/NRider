@@ -10,7 +10,7 @@ import java.util.TimerTask;
 public class TimeBasedRide implements IRide {
     private Timer _timer;
     private Date _startTime;
-    private int _elapsed;
+    private long _elapsed;
     private Status _status;
     private final RideScript _timeline;
 
