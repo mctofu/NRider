@@ -17,17 +17,7 @@ public class EventPublisher<T> implements IEventPublisher<T> {
     }
 
     public static <T> EventPublisher<T> directPublisher() {
-        return new EventPublisher<>(
-                new Executor() {
-                    public void execute(Runnable r) {
-                        r.run();
-                    }
-                }
-        );
-    }
-
-    public static <T> EventPublisher<T> singleThreadPublisher() {
-        return new EventPublisher<>(Executors.newSingleThreadExecutor());
+        return new EventPublisher<>(Runnable::run);
     }
 
     public static <T> EventPublisher<T> singleThreadPublisher(String executorName) {
@@ -56,12 +46,7 @@ public class EventPublisher<T> implements IEventPublisher<T> {
     public void publishEvent(final IEvent<T> event) {
         synchronized (_listeners) {
             for (final T listener : _listeners) {
-                _executor.execute(
-                        new Runnable() {
-                            public void run() {
-                                event.trigger(listener);
-                            }
-                        });
+                _executor.execute(() -> event.trigger(listener));
             }
         }
     }

@@ -12,7 +12,7 @@ import java.util.Map;
  */
 public class ListMapped extends BaseCommand {
     @Override
-    public String run(String[] args) throws Exception {
+    public String run(String[] args) {
         StringWriter output = new StringWriter();
         PrintWriter outputWriter = new PrintWriter(output);
 

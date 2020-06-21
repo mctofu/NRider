@@ -4,7 +4,7 @@ import nrider.core.RideLoad;
 
 public class RideEvent implements Comparable {
     long _position;
-    RideLoad _load;
+    final RideLoad _load;
 
     public RideEvent(long position, RideLoad load) {
         _position = position;

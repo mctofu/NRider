@@ -18,8 +18,8 @@ public class CommandInterpreter {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             HashSet<String> packageSet = new HashSet<>();
             packageSet.add("nrider.interpreter.command");
-            for (Set<Class> classes : findClasses(classLoader, null, packageSet, null).values()) {
-                for (Class c : classes) {
+            for (Set<Class<?>> classes : findClasses(classLoader, null, packageSet, null).values()) {
+                for (Class<?> c : classes) {
                     ICommand command = (ICommand) c.getDeclaredConstructor().newInstance();
                     _commandMap.put(command.getName(), command);
                 }
@@ -40,11 +40,10 @@ public class CommandInterpreter {
             return null;
         }
 
-        boolean returnTokens = true;
         StringTokenizer parser = new StringTokenizer(
                 command,
                 " \t\r\n",
-                returnTokens
+                true
         );
 
         String delims = " \"\t\r\n";
@@ -55,7 +54,7 @@ public class CommandInterpreter {
         while (parser.hasMoreTokens()) {
             String token = parser.nextToken(delims);
             if (!"\"".equals(token)) {
-                if (delims.indexOf(token) < 0) {
+                if (!delims.contains(token)) {
                     params.add(token);
                 }
             } else {
@@ -67,13 +66,12 @@ public class CommandInterpreter {
             return "Error parsing command";
         }
         if (_commandMap.containsKey(commandName)) {
-            return _commandMap.get(commandName).execute(params.toArray(new String[params.size()]));
+            return _commandMap.get(commandName).execute(params.toArray(new String[0]));
         } else {
             return "Unknown command.  Type help for a list of commands";
         }
 
     }
-
 
     // below from Kris Dover <krisdover@hotmail.com>:
 
@@ -95,12 +93,12 @@ public class CommandInterpreter {
      * @throws ClassNotFoundException if the current thread's classloader cannot load
      *                                a requested class for any reason
      */
-    public static Map<String, Set<Class>> findClasses(ClassLoader classLoader,
+    public static Map<String, Set<Class<?>>> findClasses(ClassLoader classLoader,
                                                       Set<String> interfaceFilter,
                                                       Set<String> packageFilter,
                                                       Set<String> jarFilter)
             throws ClassNotFoundException {
-        Map<String, Set<Class>> classTable = new HashMap<>();
+        Map<String, Set<Class<?>>> classTable = new HashMap<>();
         Object[] classPaths;
         try {
             // get a list of all classpaths
@@ -110,12 +108,12 @@ public class CommandInterpreter {
             classPaths = System.getProperty("java.class.path", "").split(File.pathSeparator);
         }
 
-        for (int h = 0; h < classPaths.length; h++) {
-            Enumeration files = null;
+        for (Object path : classPaths) {
+            Enumeration<?> files = null;
             JarFile module = null;
             // for each classpath ...
-            File classPath = new File(classPaths[h] instanceof URL ?
-                    URLDecoder.decode(((URL) classPaths[h]).getFile(), StandardCharsets.UTF_8) : classPaths[h].toString());
+            File classPath = new File(path instanceof URL ?
+                    URLDecoder.decode(((URL) path).getFile(), StandardCharsets.UTF_8) : path.toString());
             if (classPath.isDirectory() && jarFilter == null) {   // is our classpath a directory and jar filters are not active?
                 List<String> dirListing = new ArrayList<>();
                 // get a recursive listing of this classpath
@@ -151,11 +149,11 @@ public class CommandInterpreter {
                     // debug class list
                     //System.out.println(className);
                     // skip any classes in packages not explicitly requested in our package filter
-                    if (packageFilter != null && (className.indexOf(".") < 0 || !packageFilter.contains(className.substring(0, className.lastIndexOf("."))))) {
+                    if (packageFilter != null && (!className.contains(".") || !packageFilter.contains(className.substring(0, className.lastIndexOf("."))))) {
                         continue;
                     }
                     // get the class for our class name
-                    Class theClass;
+                    Class<?> theClass;
                     try {
                         theClass = Class.forName(className, false, classLoader);
                     } catch (NoClassDefFoundError e) {
@@ -167,7 +165,7 @@ public class CommandInterpreter {
                         continue;
                     }
                     //then get an array of all the interfaces in our class
-                    Class[] classInterfaces = theClass.getInterfaces();
+                    Class<?>[] classInterfaces = theClass.getInterfaces();
 
                     // for each interface in this class, add both class and interface into the map
                     String interfaceName = null;
@@ -185,7 +183,7 @@ public class CommandInterpreter {
                             classTable.get(interfaceName).add(theClass);
                         } else {
                             // else create a new list initialised with our first class and put the list into the map
-                            Set<Class> allClasses = new HashSet<>();
+                            Set<Class<?>> allClasses = new HashSet<>();
                             allClasses.add(theClass);
                             classTable.put(interfaceName, allClasses);
                         }
@@ -220,17 +218,18 @@ public class CommandInterpreter {
     private static void recursivelyListDir(List<String> dirListing, File dir, StringBuffer relativePath) {
         int prevLen; // used to undo append operations to the StringBuffer
 
-        // if the dir is really a directory
         if (dir.isDirectory()) {
-            // get a list of the files in this directory
             File[] files = dir.listFiles();
-            // for each file in the present dir
-            for (int i = 0; i < files.length; i++) {
+            if (files == null) {
+                return;
+            }
+
+            for (File file : files) {
                 // store our original relative path string length
                 prevLen = relativePath.length();
                 // call this function recursively with file list from present
-                // dir and relateveto appended with present dir
-                recursivelyListDir(dirListing, files[i], relativePath.append(prevLen == 0 ? "" : "/").append(files[i].getName()));
+                // dir and relative to appended with present dir
+                recursivelyListDir(dirListing, file, relativePath.append(prevLen == 0 ? "" : "/").append(file.getName()));
                 //  delete subdirectory previously appended to our relative path
                 relativePath.delete(prevLen, relativePath.length());
             }
@@ -239,5 +238,4 @@ public class CommandInterpreter {
             dirListing.add(relativePath.toString());
         }
     }
-
 }

@@ -9,7 +9,7 @@ public class ControllerConnect extends BaseCommand {
     }
 
     @Override
-    public String run(String[] args) throws Exception {
+    public String run(String[] args) {
         WorkoutSession.instance().connectControllers();
         return null;
     }

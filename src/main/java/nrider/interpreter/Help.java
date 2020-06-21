@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class Help extends BaseCommand {
-    public CommandInterpreter _commandInterpreter;
+    public final CommandInterpreter _commandInterpreter;
 
     public Help(CommandInterpreter ci) {
         _commandInterpreter = ci;

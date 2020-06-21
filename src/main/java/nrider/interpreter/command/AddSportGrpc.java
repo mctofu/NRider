@@ -19,7 +19,7 @@ public class AddSportGrpc extends BaseCommand
         WorkoutSession session = WorkoutSession.instance();
 
         SportGrpcController sportGrpc = new SportGrpcController(args[0], args[1]);
-        sportGrpc.addWorkoutControllerDiscoveryListener(c -> session.addWorkoutController(c));
+        sportGrpc.addWorkoutControllerDiscoveryListener(session::addWorkoutController);
 
         try {
             sportGrpc.connect();

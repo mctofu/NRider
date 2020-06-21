@@ -6,7 +6,7 @@ import nrider.ui.MediaPlayerView;
 
 public class LaunchMediaPlayer extends BaseCommand {
     @Override
-    public String run(String[] args) throws Exception {
+    public String run(String[] args) {
         MediaPlayerView mpv = new MediaPlayerView();
 
         mpv.launch();
