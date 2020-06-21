@@ -62,7 +62,7 @@ public abstract class BaseLogger {
 
     public abstract void close();
 
-    class Log {
+    static class Log {
         private List<LogEntry> _entries;
 
         public boolean isEmpty() {

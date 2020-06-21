@@ -132,9 +132,11 @@ public class TcxLogger extends BaseLogger {
             Transformer transformer = TransformerFactory.newInstance().newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 
-            StreamResult result = new StreamResult(new FileWriter(_id + ".tcx"));
-            DOMSource source = new DOMSource(doc);
-            transformer.transform(source, result);
+            try (FileWriter writer = new FileWriter(_id + ".tcx")) {
+                StreamResult result = new StreamResult(writer);
+                DOMSource source = new DOMSource(doc);
+                transformer.transform(source, result);
+            }
         } catch (Exception e) {
             throw new Error("Some sort of parser error", e);
         }
