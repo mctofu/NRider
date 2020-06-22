@@ -24,7 +24,7 @@ public class LogConfig extends ConfigurationFactory {
         AppenderComponentBuilder appenderBuilder = builder.newAppender("Stderr", "CONSOLE").
                 addAttribute("target", ConsoleAppender.Target.SYSTEM_ERR);
         appenderBuilder.add(builder.newLayout("PatternLayout").
-                addAttribute("pattern", "%d [%t] %-5level: %msg%n%throwable"));
+                addAttribute("pattern", "%d [%c] %-5level: %msg%n%throwable"));
         builder.add(appenderBuilder);
         builder.add(builder.newLogger("org.apache.logging.log4j", Level.DEBUG).
                 add(builder.newAppenderRef("Stderr")).

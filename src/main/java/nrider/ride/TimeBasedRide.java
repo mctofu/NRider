@@ -2,12 +2,15 @@ package nrider.ride;
 
 import nrider.core.RideLoad;
 import nrider.core.WorkoutSession;
+import org.apache.log4j.Logger;
 
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class TimeBasedRide implements IRide {
+    private final static Logger LOG = Logger.getLogger(TimeBasedRide.class);
+
     private Timer _timer;
     private Date _startTime;
     private long _elapsed;
@@ -76,7 +79,7 @@ public class TimeBasedRide implements IRide {
                 WorkoutSession session = WorkoutSession.instance();
                 session.setRideLoad(_load);
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.error(e);
             }
         }
     }
