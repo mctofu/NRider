@@ -64,7 +64,7 @@ public class MediaPlayerView implements IMediaEventListener, IWorkoutListener {
                 break;
             case SEEK:
                 if (!_startedPlaying) {
-                    _seekTo = me.getPosition() * 1000;
+                    _seekTo = me.getPosition() * 1000L;
                 } else {
                     _mediaPlayerComponent.mediaPlayer().controls().setTime(me.getPosition() * 1000L);
                 }
