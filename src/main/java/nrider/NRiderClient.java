@@ -138,6 +138,13 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         return label;
     }
 
+    private void ensureVisible(Component c) {
+        if (!c.isVisible()) {
+            c.setVisible(true);
+            _window.getRootPane().revalidate();
+        }
+    }
+
     class RiderListView {
         private final Container _container = new JPanel(new GridBagLayout());
         private final HashMap<String, RiderView> _riderMap = new HashMap<>();
@@ -200,7 +207,7 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
             c.gridy = 9;
             _container.add(_extPower, c);
 
-            _calibration = createLabel("Calibration", MAIN_REF_TEXT);
+            _calibration = createLabel("Calibration", MAIN_REF_TEXT, false);
             c.gridy = 10;
             _container.add(_calibration, c);
         }
@@ -221,31 +228,32 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
                     riderView.setPower(data.getValue());
                     break;
                 case CADENCE:
-                    _cadence.setVisible(true);
                     riderView.setCadence(data.getValue());
+                    ensureVisible(_cadence);
                     break;
                 case SPEED:
                     // convert m/s to mph
                     riderView.setSpeed((float) (data.getValue() * 2.237));
                     break;
                 case HEART_RATE:
-                    _hr.setVisible(true);
                     riderView.setHeartRate(data.getValue());
+                    ensureVisible(_hr);
                     break;
                 case EXT_HEART_RATE:
-                    _extHr.setVisible(true);
                     riderView.setExtHeartRate(data.getValue());
+                    ensureVisible(_extHr);
                     break;
                 case EXT_CADENCE:
-                    _extCadence.setVisible(true);
                     riderView.setExtCadence(data.getValue());
+                    ensureVisible(_extCadence);
                     break;
                 case EXT_POWER:
-                    _extPower.setVisible(true);
                     riderView.setExtPower(data.getValue());
+                    ensureVisible(_extPower);
                     break;
                 case CALIBRATION:
                     riderView.setCalibration(data.getValue());
+                    ensureVisible(_calibration);
                     break;
             }
         }
@@ -377,8 +385,8 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         }
 
         public void setCadence(float cadence) {
-            _cadence.setVisible(true);
             _cadence.updateValue(cadence, RecentPerformanceView.DataType.NORMAL);
+            ensureVisible(_cadence);
         }
 
         public void setPower(float power) {
@@ -398,28 +406,28 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         }
 
         public void setHeartRate(float hr) {
-            _heartRate.setVisible(true);
             _heartRate.updateValue(hr, RecentPerformanceView.DataType.NORMAL);
+            ensureVisible(_heartRate);
         }
 
         public void setExtHeartRate(float hr) {
-            _extHeartRate.setVisible(true);
             _extHeartRate.updateValue(hr, RecentPerformanceView.DataType.NORMAL);
+            ensureVisible(_extHeartRate);
         }
 
         public void setExtCadence(float cadence) {
-            _extCadence.setVisible(true);
             _extCadence.updateValue(cadence, RecentPerformanceView.DataType.NORMAL);
+            ensureVisible(_extCadence);
         }
 
         public void setExtPower(float power) {
-            _extPower.setVisible(true);
             _extPower.updateValue(power, RecentPerformanceView.DataType.NORMAL);
+            ensureVisible(_extPower);
         }
 
         public void setCalibration(float calibration) {
-            _calibration.setVisible(true);
             _calibration.setText(new DecimalFormat("0.00").format(calibration));
+            NRiderClient.this.ensureVisible(_calibration);
         }
 
         public void addAlert(WorkoutSession.RiderAlertType type) {
@@ -444,6 +452,13 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
             _alert.setText(sb.toString());
 
             _alert.setVisible(_alerts.size() > 0);
+        }
+
+        private void ensureVisible(PerformanceStatView p) {
+            if (!p.isVisible()) {
+                p.setVisible(true);
+                _window.getRootPane().revalidate();
+            }
         }
     }
 }

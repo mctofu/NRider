@@ -12,7 +12,6 @@ public class PerformanceStatView {
     private final long _initialTime;
     private final NumberFormat _numberFormat;
 
-
     public PerformanceStatView(double minY, double maxY, double window, NumberFormat numberFormat) {
         _performanceGraphView = new RecentPerformanceView(window, minY, maxY);
 
@@ -27,11 +26,14 @@ public class PerformanceStatView {
         return _value;
     }
 
+    public boolean isVisible() {
+        return _value.isVisible();
+    }
+
     public void setVisible(boolean visible) {
         _value.setVisible(visible);
         _performanceGraphView.setVisible(visible);
     }
-
 
     public Container getGraph() {
         return _performanceGraphView;
