@@ -12,6 +12,7 @@ import nrider.media.MediaEvent;
 import nrider.ride.IRide;
 import org.apache.log4j.Logger;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,8 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Central control for a workout.  Manages riders and trainers in a workout.
@@ -54,11 +53,11 @@ public class WorkoutSession implements
 
     private final List<Rider> _riders = new ArrayList<>();
     private final List<IWorkoutController> _controllers = new ArrayList<>();
+    private final List<Closeable> _resourcesToCleanup = new ArrayList<>();
     private final Map<String, RiderSession> _deviceMap = new HashMap<>();
     private final Map<String, RiderSession> _riderMap = new HashMap<>();
     private final Set<String> _unmappedIdentifiers = new HashSet<>();
     private final Set<String> _extMetricDevices = new HashSet<>();
-
 
     private final EventPublisher<IPerformanceDataListener> _localPerformancePublisher =
             EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
@@ -67,7 +66,6 @@ public class WorkoutSession implements
     private final EventPublisher<IWorkoutListener> _workoutPublisher =
             EventPublisher.singleThreadPublisher(WorkoutSession.class.getName());
 
-    private final Timer _taskScheduler = new Timer();
     private final RiderPerformanceMonitor _riderPerformanceMonitor = new RiderPerformanceMonitor(this);
 
     private IRide _ride;
@@ -132,30 +130,6 @@ public class WorkoutSession implements
         return null;
     }
 
-    public void disconnectControllers() {
-        synchronized (_controllers) {
-            for (IWorkoutController controller : _controllers) {
-                try {
-                    controller.disconnect();
-                } catch (IOException e) {
-                    LOG.error(e);
-                }
-            }
-        }
-    }
-
-    public void connectControllers() {
-        synchronized (_controllers) {
-            for (IWorkoutController controller : _controllers) {
-                try {
-                    controller.connect();
-                } catch (Exception e) {
-                    LOG.error(e);
-                }
-            }
-        }
-    }
-
     public void addWorkoutController(IWorkoutController controller) {
         synchronized (_controllers) {
             _controllers.add(controller);
@@ -165,6 +139,12 @@ public class WorkoutSession implements
     public List<IWorkoutController> getControllers() {
         synchronized (_controllers) {
             return Collections.unmodifiableList(_controllers);
+        }
+    }
+
+    public void addResourceToCleanup(Closeable resource) {
+        synchronized (_resourcesToCleanup) {
+            _resourcesToCleanup.add(resource);
         }
     }
 
@@ -337,13 +317,16 @@ public class WorkoutSession implements
                                 setRiderThreshold(rs.getRider().getIdentifier(), rs.getRider().getThresholdPower() - 5);
                                 break;
                             case START:
+                                LOG.info("Received control: START");
                                 startRide();
                                 break;
                             case STOP:
+                                LOG.info("Received control: STOP");
                                 pauseRide();
                                 break;
-                            case F2:
-                                tempDisconnectRider(rs.getRider().getIdentifier());
+                            case RECALIBRATE:
+                                LOG.info("Received control: RECALIBRATE");
+                                recalibrateRider(rs.getRider().getIdentifier());
                                 break;
                         }
                     }
@@ -373,27 +356,19 @@ public class WorkoutSession implements
                 controller.close();
             }
         }
+        synchronized (_resourcesToCleanup) {
+            for (Closeable resource : _resourcesToCleanup) {
+                resource.close();
+            }
+        }
     }
 
-    public void tempDisconnectRider(String riderId) {
+    public void recalibrateRider(String riderId) {
         synchronized (_controllers) {
             synchronized (_riders) {
                 final IWorkoutController riderController = getRiderController(riderId);
                 if (riderController != null) {
-                    try {
-                        riderController.disconnect();
-                        _taskScheduler.schedule(new TimerTask() {
-                            public void run() {
-                                try {
-                                    riderController.connect();
-                                } catch (Exception e) {
-                                    LOG.error("Error connecting", e);
-                                }
-                            }
-                        }, 20000);
-                    } catch (IOException e) {
-                        LOG.error("Unable to disconnect controller for rider: " + riderId, e);
-                    }
+                    riderController.recalibrate();
                 }
             }
         }

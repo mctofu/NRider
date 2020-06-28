@@ -17,10 +17,8 @@ public interface IWorkoutController {
 
     TrainerMode getMode();
 
-    // temporarily disconnect
-    void disconnect() throws IOException;
-
-    void connect();
+    // initiate a recalibration sequence on the controller
+    void recalibrate();
 
     // disconnect and release all resources
     void close() throws IOException;

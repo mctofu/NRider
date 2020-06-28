@@ -1,6 +1,5 @@
 package nrider.io;
 
-import com.google.rpc.Code;
 import io.grpc.Context;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -11,6 +10,7 @@ import org.apache.log4j.Logger;
 import sportgrpc.ControllerGrpc;
 import sportgrpc.Sport;
 
+import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -21,13 +21,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * Connects to a sport-grpc service which can provide access to multiple workout controllers or data sources.
  */
-public class SportGrpcController implements IPerformanceDataSource, IControlDataSource, IWorkoutController {
+public class SportGrpcController implements IPerformanceDataSource, IControlDataSource, Closeable {
     private final static Logger LOG = Logger.getLogger(SportGrpcController.class);
 
-    private final static Sport.LoadRequest CANCEL_REQUEST = Sport.LoadRequest.newBuilder()
-            .setTargetLoad(-12345)
-            .setDeviceId("cancel")
-            .build();
+    interface WriterAction {
+        void run(ControllerGrpc.ControllerBlockingStub controller) throws Exception;
+    }
+
+    private final static WriterAction CANCEL_ACTION = c -> {};
 
     private final String _id;
     private final String _target;
@@ -42,7 +43,7 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
     private Context.CancellableContext _controllerCtx;
     private Thread _readerThread;
     private Thread _writerThread;
-    private BlockingQueue<Sport.LoadRequest> _loadQueue = new LinkedBlockingQueue<>(10);
+    private BlockingQueue<WriterAction> _writerQueue = new LinkedBlockingQueue<>(10);
 
     public SportGrpcController(String target, String id) {
         _target = target;
@@ -59,41 +60,10 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
     }
 
     @Override
-    public String getType() {
-        return "SportGrpc";
-    }
-
-    @Override
     public String getIdentifier() {
         return _id;
     }
 
-    @Override
-    public void setLoad(double load) {
-        throw new RuntimeException("not implemented");
-    }
-
-    @Override
-    public double getLoad() {
-        return 0;
-    }
-
-    @Override
-    public void setMode(TrainerMode mode) {
-        // not implemented yet
-    }
-
-    @Override
-    public TrainerMode getMode() {
-        return TrainerMode.ERG;
-    }
-
-    @Override
-    public void disconnect() {
-        close();
-    }
-
-    @Override
     public void connect() {
         _channel = ManagedChannelBuilder.forTarget(_target)
                 .usePlaintext()
@@ -130,11 +100,11 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
 
         _writerThread = new Thread(() -> {
             while (true) {
-                Sport.LoadRequest loadReq;
+                WriterAction action;
 
                 try {
-                    loadReq = _loadQueue.take();
-                    if (loadReq == CANCEL_REQUEST) {
+                    action = _writerQueue.take();
+                    if (action == CANCEL_ACTION) {
                         LOG.info("writer cancelled");
                         return;
                     }
@@ -143,10 +113,9 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
                 }
 
                 try {
-                    _controllerStub.withDeadlineAfter(1, TimeUnit.SECONDS)
-                            .setLoad(loadReq);
+                    action.run(_controllerStub.withDeadlineAfter(1, TimeUnit.SECONDS));
                 } catch (Exception e) {
-                    LOG.error("setLoad", e);
+                    LOG.error("action failed", e);
                 }
             }
         });
@@ -154,7 +123,7 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
     }
 
     private void readData(ControllerGrpc.ControllerBlockingStub stub) {
-        LOG.info("readData");
+        LOG.info("readData loop started");
         Iterator<Sport.SportData> results = stub.readData(Sport.DataRequest.newBuilder().build());
 
         results.forEachRemaining(d -> {
@@ -198,6 +167,8 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
                         case BUTTON_RESET:
                             _controlPublisher.publishEvent(l -> l.handleControlData(id, new ControlData(ControlData.Type.STOP)));
                             break;
+                        case BUTTON_F2:
+                            _controlPublisher.publishEvent(l -> l.handleControlData(id, new ControlData(ControlData.Type.RECALIBRATE)));
                     }
                 }
             }
@@ -209,7 +180,7 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
             return;
         }
 
-        WorkoutController controller = new WorkoutController(_loadQueue, id, deviceId);
+        WorkoutController controller = new WorkoutController(_writerQueue, id, deviceId);
         _controllers.put(id, controller);
         _discoveryPublisher.publishEvent(t -> t.handleWorkoutController(controller));
     }
@@ -227,7 +198,7 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
         }
         // cancel writer
         try {
-            _loadQueue.put(CANCEL_REQUEST);
+            _writerQueue.put(CANCEL_ACTION);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -248,13 +219,13 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
     }
 
     private static class WorkoutController implements IWorkoutController {
-        private BlockingQueue<Sport.LoadRequest> _loadQueue;
+        private BlockingQueue<WriterAction> _writerQueue;
         private final String _id;
         private final String _deviceId;
         private int _load;
 
-        public WorkoutController(BlockingQueue<Sport.LoadRequest> loadQueue, String id, String deviceId) {
-            _loadQueue = loadQueue;
+        public WorkoutController(BlockingQueue<WriterAction> writerQueue, String id, String deviceId) {
+            _writerQueue = writerQueue;
             _id = id;
             _deviceId = deviceId;
         }
@@ -273,13 +244,17 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
         public void setLoad(double load) {
             _load = (int) load;
 
-            Sport.LoadRequest loadReq = Sport.LoadRequest.newBuilder()
-                    .setDeviceId(_deviceId)
-                    .setTargetLoad(_load)
-                    .build();
+            WriterAction action = c -> {
+                Sport.LoadRequest loadReq = Sport.LoadRequest.newBuilder()
+                        .setDeviceId(_deviceId)
+                        .setTargetLoad(_load)
+                        .build();
 
-            if (!_loadQueue.offer(loadReq)) {
-                LOG.warn("load queue full");
+                c.setLoad(loadReq);
+            };
+
+            if (!_writerQueue.offer(action)) {
+                LOG.warn("discarding setLoad request: action queue full");
             }
         }
 
@@ -299,13 +274,18 @@ public class SportGrpcController implements IPerformanceDataSource, IControlData
         }
 
         @Override
-        public void disconnect() {
+        public void recalibrate() {
+            WriterAction action = c -> {
+                Sport.RecalibrateRequest loadReq = Sport.RecalibrateRequest.newBuilder()
+                        .setDeviceId(_deviceId)
+                        .build();
 
-        }
+                c.recalibrate(loadReq);
+            };
 
-        @Override
-        public void connect() {
-
+            if (!_writerQueue.offer(action)) {
+                LOG.warn("discarding recalibrate request: action queue full");
+            }
         }
 
         @Override

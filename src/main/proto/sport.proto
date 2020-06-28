@@ -5,6 +5,7 @@ package sportgrpc;
 service Controller {
     rpc ReadData(DataRequest) returns (stream SportData) {}
     rpc SetLoad(LoadRequest) returns (LoadResponse) {}
+    rpc Recalibrate(RecalibrateRequest) returns (RecalibrateResponse) {}
 }
 
 message DataRequest {
@@ -17,6 +18,14 @@ message LoadRequest {
 }
 
 message LoadResponse {
+
+}
+
+message RecalibrateRequest {
+    string device_id = 1;
+}
+
+message RecalibrateResponse {
 
 }
 

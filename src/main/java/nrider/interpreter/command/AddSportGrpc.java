@@ -27,7 +27,7 @@ public class AddSportGrpc extends BaseCommand
             return "Error connecting to remote controller: " + e.getMessage();
         }
 
-        session.addWorkoutController(sportGrpc);
+        session.addResourceToCleanup(sportGrpc);
         sportGrpc.addPerformanceDataListener(session);
         sportGrpc.addControlDataListener(session);
 

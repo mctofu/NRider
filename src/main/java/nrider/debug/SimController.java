@@ -44,12 +44,13 @@ public class SimController implements IWorkoutController, IPerformanceDataSource
         return _trainerMode;
     }
 
-    public void disconnect() {
-        _active = false;
-    }
-
     public void connect() {
         _active = true;
+    }
+
+    @Override
+    public void recalibrate() {
+        // nothing to do
     }
 
     public void close() {
