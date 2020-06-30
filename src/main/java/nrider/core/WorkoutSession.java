@@ -208,13 +208,8 @@ public class WorkoutSession implements
     public void pauseRide() {
         if (_ride != null) {
             synchronized (_ride) {
-                if (_ride.getStatus() == IRide.Status.RUNNING || _ride.getStatus() == IRide.Status.PAUSED) {
-                    if (_ride.getStatus() == IRide.Status.PAUSED) {
-                        _ride.stop();
-                    } else {
-                        _ride.pause();
-                    }
-
+                if (_ride.getStatus() == IRide.Status.RUNNING) {
+                    _ride.pause();
                     _riderPerformanceMonitor.deactivate();
                     _workoutPublisher.publishEvent(
                             target -> target.handleRideStatusUpdate(_ride.getStatus()));
