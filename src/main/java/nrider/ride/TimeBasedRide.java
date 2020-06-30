@@ -13,43 +13,44 @@ public class TimeBasedRide implements IRide {
 
     private Timer _timer;
     private Date _startTime;
-    private long _elapsed;
+    private long _startElapsed;
     private Status _status;
     private final RideScript _timeline;
+    private final WorkoutSession _session;
 
-    public TimeBasedRide(RideScript timeline) {
+    public TimeBasedRide(WorkoutSession session, RideScript timeline) {
+        _session = session;
         _timeline = timeline;
         _status = Status.READY;
     }
 
     public void start() {
         if (_status == Status.READY || _status == Status.PAUSED) {
+            LOG.info("Starting ride");
             _timer = new Timer("TimeBasedRide", true);
             _startTime = new Date();
             if (_status == Status.READY) {
-                _elapsed = 0;
+                _startElapsed = 0;
             }
             _status = Status.RUNNING;
-            for (RideEvent te : _timeline) {
-                if (te.getPosition() >= _elapsed) {
-                    _timer.schedule(new LoadTask(te.getLoad()), te.getPosition() - _elapsed);
-                }
-            }
-            _timer.scheduleAtFixedRate(new TimeUpdateTask(), 500, 500);
+            _timer.scheduleAtFixedRate(new TimeUpdateTask(), 0, 250);
+            LOG.info("Started ride");
         }
     }
 
     public void pause() {
         if (_status == Status.RUNNING) {
             _timer.cancel();
-            _elapsed += new Date().getTime() - _startTime.getTime();
+            _startElapsed += new Date().getTime() - _startTime.getTime();
             _status = Status.PAUSED;
+            LOG.info("Paused ride");
         }
     }
 
     public void stop() {
         pause();
         _status = Status.STOPPED;
+        LOG.info("Stopped ride");
     }
 
     public Status getStatus() {
@@ -62,27 +63,14 @@ public class TimeBasedRide implements IRide {
 
     public class TimeUpdateTask extends TimerTask {
         public void run() {
-            long elapsed = _elapsed + new Date().getTime() - _startTime.getTime();
-            WorkoutSession.instance().setRideElapsedTime(elapsed);
-        }
-    }
+            long elapsed = _startElapsed + new Date().getTime() - _startTime.getTime();
 
-    public static class LoadTask extends TimerTask {
-        private final RideLoad _load;
+            _session.setRideElapsedTime(elapsed);
 
-        public LoadTask(RideLoad load) {
-            _load = load;
-        }
-
-        public void run() {
-            try {
-                WorkoutSession session = WorkoutSession.instance();
-                session.setRideLoad(_load);
-            } catch (Exception e) {
-                LOG.error(e);
+            RideLoad load = _timeline.getLoad(elapsed);
+            if (load != null) {
+                _session.setRideLoad(load);
             }
         }
     }
-
-
 }

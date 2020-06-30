@@ -37,7 +37,7 @@ public class WorkoutAppend extends BaseCommand {
         script.append(session.getRide().getScript());
         script.append(ride.getScript());
 
-        session.setRide(new TimeBasedRide(script));
+        session.setRide(new TimeBasedRide(session, script));
         return null;
     }
 }

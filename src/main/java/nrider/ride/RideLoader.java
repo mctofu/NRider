@@ -1,6 +1,7 @@
 package nrider.ride;
 
 import nrider.core.RideLoad;
+import nrider.core.WorkoutSession;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -61,6 +62,6 @@ public class RideLoader {
             }
         }
 
-        return new TimeBasedRide(script);
+        return new TimeBasedRide(WorkoutSession.instance(), script);
     }
 }
