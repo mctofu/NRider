@@ -5,10 +5,19 @@ import nrider.interpreter.CommandInterpreter;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 
 public class NRiderConsole {
     private final CommandInterpreter _interpreter = new CommandInterpreter();
+    private final Object _lock = new Object();
+    private final InputStream _in;
+
+    private boolean _cancelled;
+
+    public NRiderConsole(InputStream in) {
+        _in = in;
+    }
 
     public void runScript(String scriptFilePath) throws IOException {
         System.out.println("Run script " + scriptFilePath);
@@ -21,14 +30,33 @@ public class NRiderConsole {
     }
 
     public void start() throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(_in));
 
         while (true) {
-            String input = reader.readLine();
-            if ("exit".equals(input)) {
-                break;
+            if (reader.ready()) {
+                String input = reader.readLine();
+                if ("exit".equals(input) || input == null) {
+                    return;
+                }
+                processLine(input);
+            } else {
+                synchronized (_lock) {
+                    if (_cancelled) {
+                        return;
+                    }
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    return;
+                }
             }
-            processLine(input);
+        }
+    }
+
+    public void cancel() {
+        synchronized (_lock) {
+            _cancelled = true;
         }
     }
 

@@ -2,14 +2,21 @@ package nrider;
 
 import nrider.core.WorkoutSession;
 
+import java.io.InputStream;
+
 public class NRider {
     public void start(String[] args) {
-        NRiderClient client = new NRiderClient();
+        InputStream in = System.in;
+
+        NRiderConsole console = new NRiderConsole(in);
+
+        NRiderClient client = new NRiderClient(console::cancel);
+
         try {
             client.start();
             WorkoutSession.instance().addPerformanceDataListener(client);
             WorkoutSession.instance().addWorkoutListener(client);
-            NRiderConsole console = new NRiderConsole();
+
             if (args.length > 0) {
                 console.runScript(args[0]);
             }

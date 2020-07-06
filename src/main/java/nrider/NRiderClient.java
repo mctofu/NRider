@@ -14,6 +14,9 @@ import nrider.ui.RideScriptView;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,11 +28,17 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     private static final String MAIN_REF_TEXT = "Calibration__";
     private static final Font DEFAULT_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 30);
 
+    private final Runnable _onClosed;
+
     private JFrame _window;
     private RiderListView _riderListView;
     private JLabel _workoutLoad;
     private RideScriptView _rideScriptView;
     private JLabel _rideTime;
+
+    public NRiderClient(Runnable onClosed) {
+        _onClosed = onClosed;
+    }
 
     public void start() {
         SwingUtilities.invokeLater(this::init);
@@ -38,6 +47,13 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     private void init() {
         _window = new JFrame();
         _window.setSize(1600, 800);
+        _window.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                _onClosed.run();
+            }
+        });
+        _window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         Container content = _window.getContentPane();
         content.setLayout(new GridBagLayout());
