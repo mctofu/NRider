@@ -11,6 +11,7 @@ import nrider.ui.FontScalingLabel;
 import nrider.ui.PerformanceStatView;
 import nrider.ui.RecentPerformanceView;
 import nrider.ui.RideScriptView;
+import nrider.ui.ScreenActiveTask;
 
 import javax.swing.*;
 import java.awt.*;
@@ -30,6 +31,8 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
 
     private final Runnable _onClosed;
 
+    private Timer _timer;
+
     private JFrame _window;
     private RiderListView _riderListView;
     private JLabel _workoutLoad;
@@ -45,12 +48,15 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
     }
 
     private void init() {
+        _timer = new Timer(10000, new ScreenActiveTask());
+        _timer.start();
+
         _window = new JFrame();
         _window.setSize(1600, 800);
         _window.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
-                _onClosed.run();
+                closed();
             }
         });
         _window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -89,6 +95,11 @@ public class NRiderClient implements IPerformanceDataListener, IWorkoutListener 
         _riderListView = new RiderListView();
         content.add(_riderListView.getContainer(), c);
         _window.setVisible(true);
+    }
+
+    private void closed() {
+        _timer.stop();
+        _onClosed.run();
     }
 
     public void handleRideLoaded(final IRide ride) {
